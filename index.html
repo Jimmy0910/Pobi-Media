@@ -2,167 +2,761 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>梯形校正工作台｜Cloudflare</title>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
-:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;color:#172033;background:#f4f6f8}
-*{box-sizing:border-box}body{margin:0}.app{height:100vh;display:grid;grid-template-columns:300px 1fr 310px;grid-template-rows:64px 1fr;overflow:hidden}
-header{grid-column:1/-1;background:#111827;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #263244}
-header h1{font-size:18px;margin:0;font-weight:700;display:flex;align-items:center;gap:10px}header small{color:#94a3b8;font-size:13px;font-weight:normal}
-.header-actions{display:flex;gap:10px}
-button{border:0;border-radius:8px;padding:9px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:#e2e8f0;color:#1e293b;transition:all .15s ease}
-button:hover:not(:disabled){background:#cbd5e1}
-button.primary{background:#2563eb;color:#fff}button.primary:hover:not(:disabled){background:#1d4ed8}
-button.secondary{background:#0f766e;color:#fff}button.secondary:hover:not(:disabled){background:#115e59}
-button.danger{background:#fee2e2;color:#991b1b}button.danger:hover:not(:disabled){background:#fecaca}
-button:disabled{opacity:.45;cursor:not-allowed}
-.sidebar,.inspector{background:#fff;min-height:0;overflow-y:auto}.sidebar{border-right:1px solid #e2e8f0;padding:16px;display:flex;flex-direction:column}
-.inspector{border-left:1px solid #e2e8f0;padding:18px}
-.drop{border:2px dashed #cbd5e1;border-radius:12px;padding:20px 12px;text-align:center;color:#64748b;background:#f8fafc;transition:border-color .15s}
-.drop.drag{border-color:#2563eb;background:#eff6ff}.drop strong{display:block;color:#1e293b;margin-bottom:4px;font-size:14px}
-.drop span{font-size:12px;color:#94a3b8}.drop input{display:none}
-.drop label{display:inline-block;margin-top:10px;background:#2563eb;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px}
-.list-header{display:flex;justify-content:space-between;align-items:center;margin-top:14px;margin-bottom:6px;font-size:12px;color:#64748b}
-.list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1}
-.item{display:grid;grid-template-columns:56px 1fr 24px;gap:8px;align-items:center;border:1px solid #e2e8f0;border-radius:8px;padding:6px;background:#fff;cursor:pointer;transition:border-color .15s}
-.item:hover{border-color:#93c5fd}
-.item.active{border-color:#2563eb;background:#eff6ff}
-.thumb{width:56px;height:46px;object-fit:cover;border-radius:6px;background:#e2e8f0}
-.item .name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1e293b}
-.item .meta{font-size:11px;color:#64748b;margin-top:2px}
-.x{padding:2px 6px;background:transparent;color:#94a3b8;border-radius:4px;font-size:16px;line-height:1}
-.x:hover{color:#dc2626;background:#fee2e2}
-.workspace{min-width:0;min-height:0;display:flex;flex-direction:column;background:#1e293b}
-.toolbar{height:52px;display:flex;align-items:center;gap:8px;padding:0 14px;background:#0f172a;border-bottom:1px solid #334155}
-.toolbar button{padding:6px 11px;font-size:12px;background:#334155;color:#e2e8f0}
-.toolbar button:hover:not(:disabled){background:#475569}
-.toolbar .spacer{flex:1}
-.stage{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:16px}
-.empty{color:#94a3b8;text-align:center;line-height:1.6}
-.canvas-wrap{position:relative;box-shadow:0 12px 36px rgba(0,0,0,.45);border-radius:4px;overflow:hidden;user-select:none}
-#preview{display:block;background:#000}
-#overlay{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
-.hint{position:absolute;left:16px;bottom:14px;color:#cbd5e1;font-size:12px;background:rgba(15,23,42,.75);padding:6px 12px;border-radius:6px;backdrop-filter:blur(4px)}
-.inspector h2{font-size:14px;margin:0 0 12px;color:#0f172a}
-.section{padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #e2e8f0}
-.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0}
-.row label{font-size:13px;color:#475569}
-.row input[type=number],.row select{width:125px;border:1px solid #cbd5e1;border-radius:6px;padding:6px 8px;font-size:13px}
-.row input[type=range]{width:125px}
-.stats{font-size:12px;color:#64748b;line-height:1.6}
-.corners{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
-.corner{font-size:11px;color:#475569;background:#f1f5f9;padding:6px 8px;border-radius:6px;font-family:ui-monospace,monospace}
-@media(max-width:1024px){.app{grid-template-columns:250px 1fr}.inspector{display:none}}
-@media(max-width:720px){.app{grid-template-columns:1fr;grid-template-rows:60px 1fr}.sidebar{display:none}.toolbar{overflow-x:auto}}
+:root {
+  --bg-main: #0f172a;
+  --bg-panel: #ffffff;
+  --bg-subtle: #f8fafc;
+  --border-color: #e2e8f0;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary: #0f766e;
+  --secondary-hover: #115e59;
+  --danger: #ef4444;
+  --danger-bg: #fee2e2;
+  --header-bg: #0f172a;
+  --header-text: #ffffff;
+  --toolbar-bg: #1e293b;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+  color: var(--text-main);
+  background: #090d16;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 主容器 Grid 佈局 (桌面預設 3 欄) */
+.app {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr 290px;
+  grid-template-rows: 56px 1fr;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 頂部 Header */
+header {
+  grid-column: 1 / -1;
+  background: var(--header-bg);
+  color: var(--header-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid #1e293b;
+  z-index: 20;
+  gap: 10px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.brand h1 {
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+.brand small {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 通用按鈕樣式 */
+button {
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #e2e8f0;
+  color: #1e293b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all .15s ease;
+  user-select: none;
+}
+button:hover:not(:disabled) { background: #cbd5e1; }
+button:active:not(:disabled) { transform: scale(0.98); }
+button.primary { background: var(--primary); color: #fff; }
+button.primary:hover:not(:disabled) { background: var(--primary-hover); }
+button.secondary { background: var(--secondary); color: #fff; }
+button.secondary:hover:not(:disabled) { background: var(--secondary-hover); }
+button.danger { background: var(--danger-bg); color: #991b1b; }
+button.danger:hover:not(:disabled) { background: #fecaca; }
+button:disabled { opacity: .4; cursor: not-allowed; }
+
+.btn-icon {
+  padding: 6px 10px;
+}
+
+/* 側邊欄 (左側圖片庫) & 檢查器 (右側設定) */
+.sidebar, .inspector {
+  background: var(--bg-panel);
+  min-height: 0;
+  overflow-y: auto;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar {
+  border-right: 1px solid var(--border-color);
+  padding: 14px;
+}
+.inspector {
+  border-left: 1px solid var(--border-color);
+  padding: 16px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+.panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.close-drawer {
+  display: none;
+  background: transparent;
+  padding: 4px 8px;
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+/* 拖曳上傳區 */
+.drop {
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 16px 10px;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  transition: border-color .15s, background-color .15s;
+}
+.drop.drag {
+  border-color: var(--primary);
+  background: #eff6ff;
+}
+.drop strong {
+  display: block;
+  color: var(--text-main);
+  margin-bottom: 3px;
+  font-size: 13px;
+}
+.drop span {
+  font-size: 11px;
+  color: #94a3b8;
+}
+.drop input { display: none; }
+.drop label {
+  display: inline-block;
+  margin-top: 8px;
+  background: var(--primary);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.list-meta-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 100px;
+}
+.item {
+  display: grid;
+  grid-template-columns: 52px 1fr 24px;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 5px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.item:hover { border-color: #93c5fd; }
+.item.active { border-color: var(--primary); background: #eff6ff; }
+.thumb {
+  width: 52px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 5px;
+  background: #e2e8f0;
+}
+.item .name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-main);
+}
+.item .meta {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.x {
+  padding: 2px 4px;
+  background: transparent;
+  color: #94a3b8;
+  border-radius: 4px;
+  font-size: 15px;
+  line-height: 1;
+}
+.x:hover { color: #dc2626; background: #fee2e2; }
+
+/* 工作區與工具列 */
+.workspace {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #131926;
+  position: relative;
+}
+.toolbar {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid #334155;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.toolbar::-webkit-scrollbar { display: none; }
+.toolbar button {
+  padding: 5px 9px;
+  font-size: 12px;
+  background: #334155;
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+.toolbar button:hover:not(:disabled) { background: #475569; }
+.toolbar .spacer { flex: 1; min-width: 8px; }
+.toolbar .tip {
+  color: #94a3b8;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* 畫布舞台 Stage */
+.stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 12px;
+}
+.empty {
+  color: #94a3b8;
+  text-align: center;
+  line-height: 1.6;
+  font-size: 13.5px;
+  padding: 20px;
+}
+.canvas-wrap {
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5);
+  border-radius: 4px;
+  overflow: hidden;
+  user-select: none;
+  max-width: 100%;
+  max-height: 100%;
+}
+#preview {
+  display: block;
+  background: #000;
+}
+#overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+.hint {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  background: rgba(15,23,42,.8);
+  padding: 4px 10px;
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Inspector 區塊 */
+.section {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+.section h2 {
+  font-size: 13px;
+  margin: 0 0 8px;
+  color: var(--text-main);
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 0;
+}
+.row label {
+  font-size: 12px;
+  color: #475569;
+}
+.row input[type=number], .row select {
+  width: 120px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 7px;
+  font-size: 12px;
+}
+.row input[type=range] { width: 110px; }
+.stats {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.corners {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-top: 4px;
+}
+.corner {
+  font-size: 10.5px;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 5px 6px;
+  border-radius: 5px;
+  font-family: ui-monospace, monospace;
+}
+
+/* 行動端與平板抽屜遮罩 */
+.drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 40;
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.drawer-backdrop.active {
+  display: block;
+  opacity: 1;
+}
+
+/* 行動端底部導航條 */
+.mobile-nav {
+  display: none;
+  background: var(--header-bg);
+  border-top: 1px solid #1e293b;
+  padding: 6px 10px calc(6px + var(--safe-bottom));
+  z-index: 30;
+  justify-content: space-around;
+  align-items: center;
+  flex-shrink: 0;
+}
+.mobile-nav-btn {
+  background: transparent;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.mobile-nav-btn svg { width: 18px; height: 18px; fill: currentColor; }
+.mobile-nav-btn.active, .mobile-nav-btn:hover {
+  color: #ffffff;
+  background: #1e293b;
+}
+.badge {
+  background: var(--primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 10px;
+  margin-left: 2px;
+}
+
+/* =========================================================
+   響應式規則 (RWD: 平板直/橫、手機直/橫)
+   ========================================================= */
+
+/* 平板與中螢幕 (< 1024px) */
+@media (max-width: 1024px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 50px 1fr;
+  }
+  
+  /* 側邊欄與檢查器轉為抽屜模式 */
+  .sidebar, .inspector {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 320px;
+    max-width: 85vw;
+    z-index: 50;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar {
+    left: 0;
+    transform: translateX(-100%);
+    border-right: 1px solid var(--border-color);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .inspector {
+    right: 0;
+    transform: translateX(100%);
+    border-left: 1px solid var(--border-color);
+  }
+  .inspector.open {
+    transform: translateX(0);
+  }
+  
+  .close-drawer {
+    display: inline-flex;
+  }
+  
+  .mobile-nav {
+    display: flex;
+  }
+  
+  /* Header 精簡化 */
+  .brand small { display: none; }
+}
+
+/* 手機直式與極窄螢幕 (< 640px) */
+@media (max-width: 640px) {
+  header {
+    padding: 0 10px;
+    height: 48px;
+  }
+  .brand h1 {
+    font-size: 14.5px;
+  }
+  .header-actions button {
+    padding: 5px 8px;
+    font-size: 11.5px;
+  }
+  .toolbar {
+    height: 42px;
+    padding: 0 8px;
+  }
+  .toolbar button {
+    padding: 4px 7px;
+    font-size: 11px;
+  }
+  .toolbar .tip {
+    display: none;
+  }
+  
+  /* 抽屜全寬與底部適應 */
+  .sidebar, .inspector {
+    width: 100vw;
+    max-width: 100vw;
+  }
+}
+
+/* 手機橫向模式 (高度特別低的情況 < 520px) */
+@media (max-height: 520px) and (orientation: landscape) {
+  header {
+    height: 40px;
+    padding: 0 10px;
+  }
+  .app {
+    grid-template-rows: 40px 1fr;
+  }
+  .toolbar {
+    height: 36px;
+    padding: 0 6px;
+  }
+  .toolbar button {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+  .stage {
+    padding: 6px;
+  }
+  .mobile-nav {
+    padding: 3px 6px calc(3px + var(--safe-bottom));
+  }
+  .mobile-nav-btn {
+    flex-direction: row;
+    gap: 4px;
+    padding: 3px 6px;
+  }
+  .mobile-nav-btn svg { width: 14px; height: 14px; }
+}
 </style>
 </head>
 <body>
+
 <div class="app">
-<header>
-  <div><h1>梯形校正工作台 <small>四角透視重映射・批量處理</small></h1></div>
-  <div class="header-actions">
-    <button id="exportCurrent" class="secondary" disabled>下載目前圖</button>
-    <button id="exportAll" class="primary" disabled>下載全部 (ZIP)</button>
-  </div>
-</header>
-<aside class="sidebar">
-  <div id="drop" class="drop">
-    <strong>拖曳多張圖片到此處</strong>
-    <span>支援 JPG、PNG、WEBP</span>
-    <br>
-    <label for="files">選擇圖片</label>
-    <input id="files" type="file" accept="image/*" multiple>
-  </div>
-  <div class="list-header">
-    <span id="listCount">圖片列表 (0)</span>
-    <button id="clearAll" style="padding:2px 6px;font-size:11px" class="danger">清空</button>
-  </div>
-  <div id="list" class="list"></div>
-</aside>
-<main class="workspace">
-  <div class="toolbar">
-    <button id="reset">重設四角</button>
-    <button id="auto">自動置中</button>
-    <button id="rotateL">↶ 左轉 90°</button>
-    <button id="rotateR">↷ 右轉 90°</button>
-    <div class="spacer"></div>
-    <span style="color:#94a3b8;font-size:12px">拖曳 1~4 號角點校正透視</span>
-  </div>
-  <div id="stage" class="stage">
-    <div id="empty" class="empty">
-      請上傳圖片以開始校正<br>
-      <span style="font-size:12px;color:#64748b">所有運算皆在瀏覽器端 WebGL 處理，安全不洩漏</span>
+  <!-- 頂部導航 -->
+  <header>
+    <div class="brand">
+      <h1>梯形校正工作台 <small>四角透視重映射</small></h1>
     </div>
-    <div id="canvasWrap" class="canvas-wrap" hidden>
-      <canvas id="preview"></canvas>
-      <canvas id="overlay"></canvas>
+    <div class="header-actions">
+      <button id="btnOpenSidebar" class="btn-icon" title="圖片列表" style="background:#1e293b;color:#e2e8f0">
+        📁 圖片 <span id="headerBadge" class="badge">0</span>
+      </button>
+      <button id="btnOpenInspector" class="btn-icon" title="輸出設定" style="background:#1e293b;color:#e2e8f0">
+        ⚙️ 設定
+      </button>
+      <button id="exportCurrent" class="secondary" disabled>下載目前圖</button>
+      <button id="exportAll" class="primary" disabled>下載全部 (ZIP)</button>
     </div>
-    <div class="hint" id="hint" hidden>拖曳四角圓點進行梯形校正</div>
-  </div>
-</main>
-<aside class="inspector">
-  <div class="section">
-    <h2>輸出設定</h2>
-    <div class="row">
-      <label>格式</label>
-      <select id="format">
-        <option value="image/jpeg">JPG</option>
-        <option value="image/png">PNG</option>
-        <option value="image/webp">WEBP</option>
-      </select>
+  </header>
+
+  <!-- 抽屜遮罩 (小螢幕與平板時使用) -->
+  <div id="drawerBackdrop" class="drawer-backdrop"></div>
+
+  <!-- 左側邊欄：圖片庫與上傳 -->
+  <aside id="sidebar" class="sidebar">
+    <div class="panel-header">
+      <div class="panel-title">
+        📁 圖片庫 <span id="listCount" class="badge">0</span>
+      </div>
+      <button id="closeSidebar" class="close-drawer" title="關閉">✕</button>
     </div>
-    <div class="row">
-      <label>品質</label>
-      <input id="quality" type="range" min="0.5" max="1" step="0.01" value="0.92">
-      <span id="qualityVal" style="font-size:12px;color:#475569;width:35px;text-align:right">92%</span>
+    <div id="drop" class="drop">
+      <strong>拖曳多張圖片到此處</strong>
+      <span>支援 JPG、PNG、WEBP</span>
+      <br>
+      <label for="files">選擇圖片</label>
+      <input id="files" type="file" accept="image/*" multiple>
     </div>
-    <div class="row">
-      <label>最大長邊</label>
-      <select id="maxSize">
-        <option value="0">原尺寸</option>
-        <option value="4000">4000 px</option>
-        <option value="3000">3000 px</option>
-        <option value="2500">2500 px</option>
-        <option value="2000">2000 px</option>
-      </select>
+    <div class="list-meta-bar">
+      <span>已載入清單</span>
+      <button id="clearAll" style="padding:2px 6px;font-size:11px" class="danger">清空全部</button>
     </div>
-  </div>
-  <div class="section">
-    <h2>目前圖片</h2>
-    <div id="stats" class="stats">尚未選擇圖片</div>
-  </div>
-  <div class="section">
-    <h2>四角座標 (原圖)</h2>
-    <div class="corners">
-      <div class="corner" id="c0">① 左上: -</div>
-      <div class="corner" id="c1">② 右上: -</div>
-      <div class="corner" id="c2">③ 右下: -</div>
-      <div class="corner" id="c3">④ 左下: -</div>
+    <div id="list" class="list"></div>
+  </aside>
+
+  <!-- 中間主工作區 -->
+  <main class="workspace">
+    <div class="toolbar">
+      <button id="reset">🔄 重設</button>
+      <button id="auto">🎯 自動置中</button>
+      <button id="rotateL">↶ 左轉 90°</button>
+      <button id="rotateR">↷ 右轉 90°</button>
+      <div class="spacer"></div>
+      <span class="tip">拖曳 1~4 號圓點校正透視</span>
     </div>
-  </div>
-  <div class="section">
-    <h2>說明</h2>
-    <div class="stats">
-      1. 上傳照片後選擇圖片。<br>
-      2. 拖曳 4 個角點對齊目標區域四角。<br>
-      3. 可選擇導出單張或一鍵打包 ZIP。<br>
-      適合文件掃描、書頁、白板、投影片拍照修復。
+    <div id="stage" class="stage">
+      <div id="empty" class="empty">
+        請點擊「選擇圖片」或「📁 圖片」上傳圖片開始校正<br>
+        <span style="font-size:12px;color:#64748b">所有運算皆在瀏覽器端 WebGL 處理，安全不洩漏</span>
+      </div>
+      <div id="canvasWrap" class="canvas-wrap" hidden>
+        <canvas id="preview"></canvas>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div class="hint" id="hint" hidden>拖曳四角圓點進行透視校正</div>
     </div>
-  </div>
-</aside>
+  </main>
+
+  <!-- 右側設定面板 -->
+  <aside id="inspector" class="inspector">
+    <div class="panel-header">
+      <div class="panel-title">⚙️ 輸出與座標設定</div>
+      <button id="closeInspector" class="close-drawer" title="關閉">✕</button>
+    </div>
+    <div class="section">
+      <h2>輸出格式</h2>
+      <div class="row">
+        <label>圖片格式</label>
+        <select id="format">
+          <option value="image/jpeg">JPG</option>
+          <option value="image/png">PNG</option>
+          <option value="image/webp">WEBP</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>壓縮品質</label>
+        <input id="quality" type="range" min="0.5" max="1" step="0.01" value="0.92">
+        <span id="qualityVal" style="font-size:12px;color:#475569;width:35px;text-align:right">92%</span>
+      </div>
+      <div class="row">
+        <label>最大長邊限制</label>
+        <select id="maxSize">
+          <option value="0">原尺寸</option>
+          <option value="4000">4000 px</option>
+          <option value="3000">3000 px</option>
+          <option value="2500">2500 px</option>
+          <option value="2000">2000 px</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>目前圖片資訊</h2>
+      <div id="stats" class="stats">尚未選擇圖片</div>
+    </div>
+
+    <div class="section">
+      <h2>四角座標 (原圖像素)</h2>
+      <div class="corners">
+        <div class="corner" id="c0">① 左上: -</div>
+        <div class="corner" id="c1">② 右上: -</div>
+        <div class="corner" id="c2">③ 右下: -</div>
+        <div class="corner" id="c3">④ 左下: -</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>操作指南</h2>
+      <div class="stats">
+        1. 透過左側或「📁 圖片」上傳並切換圖片。<br>
+        2. 手指或滑鼠拖曳 4 個角點對齊目標四角。<br>
+        3. 右上角「下載目前圖」或「下載全部 (ZIP)」。<br>
+        適合拍照失真之文件、講義、白板、黑板等。
+      </div>
+    </div>
+  </aside>
 </div>
+
+<!-- 行動端底部快速導航條 (小螢幕時顯示) -->
+<nav class="mobile-nav">
+  <button id="navBtnImages" class="mobile-nav-btn">
+    <svg viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm0 2v8.586l4.293-4.293a1 1 0 011.414 0L14 14.586l2.293-2.293a1 1 0 011.414 0L20 14.586V6H4zm0 12h16v-.586l-4.293-4.293-2.293 2.293a1 1 0 01-1.414 0L9.707 13.414 4 19.121V18zm4-9a2 2 0 100-4 2 2 0 000 4z"/></svg>
+    <span>圖片 (<span id="navCount">0</span>)</span>
+  </button>
+  <button id="navBtnRotate" class="mobile-nav-btn">
+    <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6a6 6 0 11-6 6H4a8 8 0 108-8z"/></svg>
+    <span>旋轉</span>
+  </button>
+  <button id="navBtnReset" class="mobile-nav-btn">
+    <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    <span>重設</span>
+  </button>
+  <button id="navBtnSettings" class="mobile-nav-btn">
+    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+    <span>設定</span>
+  </button>
+</nav>
 
 <script>
 const $ = s => document.querySelector(s);
 const files = $('#files'), drop = $('#drop'), list = $('#list'), stage = $('#stage');
 const preview = $('#preview'), overlay = $('#overlay'), wrap = $('#canvasWrap');
+const sidebar = $('#sidebar'), inspector = $('#inspector'), backdrop = $('#drawerBackdrop');
 
 const state = {
   items: [],
   active: -1,
   drag: -1
 };
+
+// 抽屜控制函數 (適用於小螢幕與平板)
+function openSidebar() {
+  sidebar.classList.add('open');
+  inspector.classList.remove('open');
+  backdrop.classList.add('active');
+}
+function openInspector() {
+  inspector.classList.add('open');
+  sidebar.classList.remove('open');
+  backdrop.classList.add('active');
+}
+function closeDrawers() {
+  sidebar.classList.remove('open');
+  inspector.classList.remove('open');
+  backdrop.classList.remove('active');
+}
+
+$('#btnOpenSidebar').onclick = openSidebar;
+$('#btnOpenInspector').onclick = openInspector;
+$('#closeSidebar').onclick = closeDrawers;
+$('#closeInspector').onclick = closeDrawers;
+backdrop.onclick = closeDrawers;
+
+$('#navBtnImages').onclick = openSidebar;
+$('#navBtnSettings').onclick = openInspector;
+$('#navBtnReset').onclick = () => { $('#reset').click(); };
+$('#navBtnRotate').onclick = () => { $('#rotateR').click(); };
 
 function uid() { return crypto.randomUUID(); }
 
@@ -243,13 +837,16 @@ function esc(s) {
 
 function renderList() {
   list.innerHTML = '';
-  $('#listCount').textContent = `圖片列表 (${state.items.length})`;
+  const count = state.items.length;
+  $('#listCount').textContent = count;
+  $('#headerBadge').textContent = count;
+  $('#navCount').textContent = count;
   
   state.items.forEach((it, i) => {
     const el = document.createElement('div');
     el.className = 'item' + (i === state.active ? ' active' : '');
     el.innerHTML = `
-      <img class="thumb" src="${it.objectUrl}">
+      <img class="thumb" src="${it.objectUrl}" alt="">
       <div>
         <div class="name" title="${esc(it.file.name)}">${esc(it.file.name)}</div>
         <div class="meta">${it.img.naturalWidth} × ${it.img.naturalHeight}</div>
@@ -260,6 +857,8 @@ function renderList() {
       state.active = i;
       renderList();
       renderActive();
+      // 在手機小螢幕點選後自動關閉抽屜以觀看畫布
+      if (window.innerWidth <= 1024) closeDrawers();
     };
     el.querySelector('.x').onclick = e => {
       e.stopPropagation();
@@ -301,7 +900,7 @@ function drawPreview() {
   if (!it) return;
   const im = it.img;
   
-  const stagePad = 32;
+  const stagePad = 24;
   const maxW = Math.max(100, stage.clientWidth - stagePad);
   const maxH = Math.max(100, stage.clientHeight - stagePad);
   
@@ -337,19 +936,22 @@ function drawOverlay() {
   ctx.beginPath();
   p.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y));
   ctx.closePath();
-  ctx.fillStyle = 'rgba(37, 99, 235, 0.16)';
+  ctx.fillStyle = 'rgba(37, 99, 235, 0.18)';
   ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = '#60a5fa';
   ctx.stroke();
   
-  // 繪製四角拖曳點
+  // 繪製四角拖曳點 (加大觸控判定與視覺效果)
+  const isTouch = window.innerWidth <= 1024;
+  const radius = isTouch ? 11 : 9;
+  
   p.forEach((q, i) => {
     ctx.beginPath();
-    ctx.arc(q.x, q.y, 9, 0, Math.PI * 2);
-    ctx.fillStyle = '#2563eb';
+    ctx.arc(q.x, q.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = (state.drag === i) ? '#f59e0b' : '#2563eb';
     ctx.fill();
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.strokeStyle = '#ffffff';
     ctx.stroke();
     
@@ -370,6 +972,7 @@ function updateCorners(pts) {
   });
 }
 
+// 支援手指與滑鼠精準拖曳
 overlay.addEventListener('pointerdown', e => {
   if (state.active < 0) return;
   const r = overlay.getBoundingClientRect();
@@ -378,7 +981,10 @@ overlay.addEventListener('pointerdown', e => {
   const sx = preview.width / it.img.naturalWidth;
   const sy = preview.height / it.img.naturalHeight;
   
-  let best = -1, bd = 26;
+  // 觸控裝置給予 34px 判定範圍
+  const touchThreshold = window.innerWidth <= 1024 ? 34 : 26;
+  let best = -1, bd = touchThreshold;
+  
   it.points.forEach((q, i) => {
     const d = Math.hypot(q.x * sx - x, q.y * sy - y);
     if (d < bd) {
@@ -390,6 +996,7 @@ overlay.addEventListener('pointerdown', e => {
   if (best >= 0) {
     state.drag = best;
     overlay.setPointerCapture(e.pointerId);
+    drawOverlay();
   }
 });
 
@@ -409,8 +1016,14 @@ overlay.addEventListener('pointermove', e => {
   updateStats();
 });
 
-overlay.addEventListener('pointerup', () => { state.drag = -1; });
-overlay.addEventListener('pointercancel', () => { state.drag = -1; });
+const endDrag = () => {
+  if (state.drag >= 0) {
+    state.drag = -1;
+    drawOverlay();
+  }
+};
+overlay.addEventListener('pointerup', endDrag);
+overlay.addEventListener('pointercancel', endDrag);
 
 $('#reset').onclick = () => {
   const it = state.items[state.active];
@@ -449,12 +1062,9 @@ function rotateImage(angle) {
   
   if (angle === 90) { // 順時針 90 度
     const mapped = it.points.map(p => ({ x: h - p.y, y: p.x }));
-    // 原 TL(0)->TR(1), TR(1)->BR(2), BR(2)->BL(3), BL(3)->TL(0)
-    // 循環位移確保 index 0 依然是 TL
     newPts = [mapped[3], mapped[0], mapped[1], mapped[2]];
   } else { // 逆時針 90 度
     const mapped = it.points.map(p => ({ x: p.y, y: w - p.x }));
-    // 原 TL(0)->BL(3), TR(1)->TL(0), BR(2)->TR(1), BL(3)->BR(2)
     newPts = [mapped[1], mapped[2], mapped[3], mapped[0]];
   }
   
@@ -480,9 +1090,17 @@ $('#quality').oninput = e => {
   $('#qualityVal').textContent = Math.round(e.target.value * 100) + '%';
 };
 
-window.onresize = () => {
+// 視窗與容器尺寸變化監聽 (自動適應平板與手機橫豎切換)
+const resizeObserver = new ResizeObserver(() => {
   if (state.active >= 0) drawPreview();
-};
+});
+resizeObserver.observe(stage);
+window.addEventListener('resize', () => {
+  if (state.active >= 0) drawPreview();
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => { if (state.active >= 0) drawPreview(); }, 100);
+});
 
 function getOutputSize(p) {
   const a = Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y);
@@ -597,7 +1215,7 @@ function initWebGL() {
 
   globalBuffer = globalGl.createBuffer();
   globalGl.bindBuffer(globalGl.ARRAY_BUFFER, globalBuffer);
-  // NDC coordinates + Canvas UV (TL=0,0; BR=1,1)
+  // NDC coordinates + Canvas UV
   const quadData = new Float32Array([
     -1,  1,  0, 0,
     -1, -1,  0, 1,
@@ -618,7 +1236,7 @@ function renderWarp(im, points, w, h) {
   gl.viewport(0, 0, w, h);
   gl.useProgram(globalProgram);
 
-  gl.bindBuffer(globalGl.ARRAY_BUFFER, globalBuffer);
+  gl.bindBuffer(gl.ARRAY_BUFFER, globalBuffer);
   const posLoc = gl.getAttribLocation(globalProgram, 'a_pos');
   const uvLoc = gl.getAttribLocation(globalProgram, 'a_uv');
   gl.enableVertexAttribArray(posLoc);
@@ -638,7 +1256,6 @@ function renderWarp(im, points, w, h) {
   const imgW = im.naturalWidth || im.width;
   const imgH = im.naturalHeight || im.height;
 
-  // 標準化四角座標 [0, 1]
   const dstPts = [
     { x: 0, y: 0 },
     { x: 1, y: 0 },
@@ -648,7 +1265,6 @@ function renderWarp(im, points, w, h) {
   const srcPts = points.map(p => ({ x: p.x / imgW, y: p.y / imgH }));
   const H = computeHomographyDstToSrc(dstPts, srcPts);
 
-  // WebGL 矩陣為 column-major
   const uHLoc = gl.getUniformLocation(globalProgram, 'u_H');
   gl.uniformMatrix3fv(uHLoc, false, new Float32Array([
     H[0], H[3], H[6],
@@ -659,7 +1275,6 @@ function renderWarp(im, points, w, h) {
   gl.drawArrays(gl.TRIANGLES, 0, 6);
   gl.deleteTexture(tex);
 
-  // 拷貝輸出至獨立 Canvas
   const out = document.createElement('canvas');
   out.width = w;
   out.height = h;
