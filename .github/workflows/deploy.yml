@@ -1,14 +1,15 @@
-name: Deploy to Cloudflare Workers
+name: CI & Deploy to Cloudflare Workers
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-verify:
     runs-on: ubuntu-latest
-    name: Build & Deploy
+    name: Build, Verify & Deploy
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,7 +21,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Type check
         run: npm run typecheck
@@ -28,9 +29,23 @@ jobs:
       - name: Build static assets
         run: npm run build
 
+      - name: Check Cloudflare Credentials
+        id: check-credentials
+        run: |
+          if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] && [ -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "can_deploy=true" >> $GITHUB_OUTPUT
+            echo "Cloudflare Secrets found. Proceeding with deployment."
+          else
+            echo "can_deploy=false" >> $GITHUB_OUTPUT
+            echo "Cloudflare Secrets (CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID) not configured in GitHub repository."
+            echo "Skipping deployment step cleanly. Build & Quality checks passed!"
+          fi
+
       - name: Deploy to Cloudflare Workers
+        if: steps.check-credentials.outputs.can_deploy == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
 
