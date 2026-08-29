@@ -7,5 +7,11 @@
     "directory": "./public",
     "not_found_handling": "single-page-application"
   },
+  "kv_namespaces": [
+    {
+      "binding": "POBI_KV",
+      "id": "8dd41442aaff42d2b92c5be9876bf9eb"
+    }
+  ],
   "observability": { "enabled": true }
 }

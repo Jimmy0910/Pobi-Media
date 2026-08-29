@@ -1,6 +1,7 @@
 interface Env {
   ASSETS: Fetcher;
   GEMINI_API_KEY?: string;
+  POBI_KV?: KVNamespace;
 }
 
 // 記憶體內簡易計數器 (Worker instance 級別防護)
