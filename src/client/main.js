@@ -3,17 +3,17 @@ const $$ = s => document.querySelectorAll(s);
 
 function showToast(msg, type = 'info') {
   const c = $('#toastContainer');
+  if (!c) return;
   const t = document.createElement('div');
   t.className = `toast ${type}`;
-  const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
-  t.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
+  t.innerHTML = `<span>${msg}</span>`;
   c.appendChild(t);
   setTimeout(() => {
     t.style.opacity = '0';
-    t.style.transform = 'translateY(10px)';
-    t.style.transition = 'all .3s';
-    setTimeout(() => t.remove(), 300);
-  }, 3500);
+    t.style.transform = 'translateY(8px)';
+    t.style.transition = 'all .25s ease';
+    setTimeout(() => t.remove(), 250);
+  }, 3200);
 }
 
 function uid() { return crypto.randomUUID(); }
@@ -35,6 +35,224 @@ function canvasToBlob(canvas, type = 'image/png', quality = 0.92) {
   return new Promise(res => canvas.toBlob(res, type, quality));
 }
 
+// ==================== 身份驗證與帳號管理器 (AuthManager) ====================
+window.AuthManager = {
+  currentUser: null,
+  mode: 'login', // 'login' | 'register'
+
+  init() {
+    this.checkSession();
+    this.bindEvents();
+  },
+
+  getUsers() {
+    try {
+      return JSON.parse(localStorage.getItem('pobi_users') || '[]');
+    } catch {
+      return [];
+    }
+  },
+
+  saveUsers(users) {
+    localStorage.setItem('pobi_users', JSON.stringify(users));
+  },
+
+  checkSession() {
+    const saved = localStorage.getItem('pobi_session') || sessionStorage.getItem('pobi_session');
+    if (saved) {
+      try {
+        this.currentUser = JSON.parse(saved);
+        this.unlockApp();
+        return;
+      } catch {}
+    }
+    this.lockApp();
+  },
+
+  lockApp() {
+    const overlay = $('#authOverlay');
+    if (overlay) overlay.classList.remove('hidden');
+    const nameEl = $('#headerUserName');
+    const avatarEl = $('#headerUserAvatar');
+    const signoutBtn = $('#btnSignOut');
+    if (nameEl) nameEl.textContent = '未登入';
+    if (avatarEl) avatarEl.textContent = '?';
+    if (signoutBtn) signoutBtn.style.display = 'none';
+  },
+
+  unlockApp() {
+    const overlay = $('#authOverlay');
+    if (overlay) overlay.classList.add('hidden');
+    const name = this.currentUser?.username || '訪客';
+    const nameEl = $('#headerUserName');
+    const avatarEl = $('#headerUserAvatar');
+    const signoutBtn = $('#btnSignOut');
+    if (nameEl) nameEl.textContent = name;
+    if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+    if (signoutBtn) signoutBtn.style.display = 'block';
+  },
+
+  bindEvents() {
+    const tabLogin = $('#tabAuthLogin');
+    const tabReg = $('#tabAuthRegister');
+    const confirmRow = $('#authConfirmPwdRow');
+    const submitBtn = $('#btnAuthSubmit');
+
+    if (tabLogin) {
+      tabLogin.onclick = () => {
+        this.mode = 'login';
+        tabLogin.classList.add('active');
+        tabReg.classList.remove('active');
+        if (confirmRow) confirmRow.style.display = 'none';
+        if (submitBtn) submitBtn.textContent = '登入進入工作站';
+        this.clearAlert();
+      };
+    }
+
+    if (tabReg) {
+      tabReg.onclick = () => {
+        this.mode = 'register';
+        tabReg.classList.add('active');
+        tabLogin.classList.remove('active');
+        if (confirmRow) confirmRow.style.display = 'flex';
+        if (submitBtn) submitBtn.textContent = '註冊並進入工作站';
+        this.clearAlert();
+      };
+    }
+
+    const togglePwd = $('#btnToggleAuthPwd');
+    if (togglePwd) {
+      togglePwd.onclick = () => {
+        const pwd = $('#authPassword');
+        if (pwd.type === 'password') {
+          pwd.type = 'text';
+          togglePwd.textContent = '隱藏';
+        } else {
+          pwd.type = 'password';
+          togglePwd.textContent = '顯示';
+        }
+      };
+    }
+
+    const form = $('#authForm');
+    if (form) {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        this.handleSubmit();
+      };
+    }
+
+    const btnGuest = $('#btnAuthGuest');
+    if (btnGuest) {
+      btnGuest.onclick = () => this.guestLogin();
+    }
+
+    const btnSignOut = $('#btnSignOut');
+    if (btnSignOut) {
+      btnSignOut.onclick = () => this.logout();
+    }
+
+    const userBtn = $('#headerUserBtn');
+    if (userBtn) {
+      userBtn.onclick = () => $('#apiModal').classList.add('active');
+    }
+  },
+
+  showAlert(msg, type = 'error') {
+    const box = $('#authAlert');
+    if (!box) return;
+    box.className = `auth-alert ${type}`;
+    box.textContent = msg;
+  },
+
+  clearAlert() {
+    const box = $('#authAlert');
+    if (!box) return;
+    box.className = 'auth-alert';
+    box.textContent = '';
+  },
+
+  handleSubmit() {
+    const u = $('#authUsername')?.value.trim();
+    const p = $('#authPassword')?.value;
+    const remember = $('#authRemember')?.checked;
+
+    if (!u) {
+      this.showAlert('請輸入帳號或電子郵件');
+      return;
+    }
+    if (!p || p.length < 4) {
+      this.showAlert('密碼長度至少需 4 個字元');
+      return;
+    }
+
+    const users = this.getUsers();
+
+    if (this.mode === 'register') {
+      const cp = $('#authConfirmPassword')?.value;
+      if (p !== cp) {
+        this.showAlert('兩次輸入的密碼不一致');
+        return;
+      }
+      if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
+        this.showAlert('此帳號名稱已被註冊，請直接登入或更換帳號');
+        return;
+      }
+
+      const newUser = { id: uid(), username: u, password: p, createdAt: new Date().toISOString() };
+      users.push(newUser);
+      this.saveUsers(users);
+
+      this.currentUser = { id: newUser.id, username: newUser.username };
+      const storage = remember ? localStorage : sessionStorage;
+      storage.setItem('pobi_session', JSON.stringify(this.currentUser));
+
+      this.showAlert('註冊成功，歡迎使用 Pobi Media！', 'success');
+      setTimeout(() => {
+        this.unlockApp();
+        showToast('註冊成功，歡迎進入 Pobi Media 專業工作站！', 'success');
+      }, 400);
+    } else {
+      let user = users.find(x => x.username.toLowerCase() === u.toLowerCase());
+      if (user) {
+        if (user.password !== p) {
+          this.showAlert('密碼錯誤，請重新確認');
+          return;
+        }
+      } else {
+        user = { id: uid(), username: u, password: p, createdAt: new Date().toISOString() };
+        users.push(user);
+        this.saveUsers(users);
+      }
+
+      this.currentUser = { id: user.id, username: user.username };
+      const storage = remember ? localStorage : sessionStorage;
+      storage.setItem('pobi_session', JSON.stringify(this.currentUser));
+
+      this.showAlert('登入成功，正在為您載入工作台...', 'success');
+      setTimeout(() => {
+        this.unlockApp();
+        showToast(`歡迎回來，${user.username}！`, 'success');
+      }, 350);
+    }
+  },
+
+  guestLogin() {
+    this.currentUser = { id: 'guest-' + uid().slice(0, 6), username: '訪客體驗' };
+    sessionStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
+    this.unlockApp();
+    showToast('已以訪客身份進入 Pobi Media 工作站', 'info');
+  },
+
+  logout() {
+    localStorage.removeItem('pobi_session');
+    sessionStorage.removeItem('pobi_session');
+    this.currentUser = null;
+    this.lockApp();
+    showToast('已安全登出', 'info');
+  }
+};
+
 // ==================== API Key 與配額管理器 ====================
 window.ApiManager = {
   userKey: localStorage.getItem('user_gemini_api_key') || '',
@@ -51,14 +269,14 @@ window.ApiManager = {
       }
       this.userKey = k;
       localStorage.setItem('user_gemini_api_key', k);
-      showToast('自備 API Key 儲存成功！已解鎖無限 AI 呼叫', 'success');
+      showToast('自備 API Key 儲存成功，已啟用無限制模式', 'success');
       this.updateBadge();
     };
     $('#btnClearApiKey').onclick = () => {
       this.userKey = '';
       localStorage.removeItem('user_gemini_api_key');
       $('#inputUserApiKey').value = '';
-      showToast('已清除自備 API Key，改回公用模式', 'info');
+      showToast('已清除自備金鑰，切換為公用配額模式', 'info');
       this.updateBadge();
     };
     $('#btnToggleKeyVisibility').onclick = () => {
@@ -81,29 +299,29 @@ window.ApiManager = {
       const res = await fetch('/api/status');
       if (res.ok) {
         this.serverStatus = await res.json();
-        $('#srvKeyStatus').textContent = this.serverStatus.hasPublicApi ? '🟢 已配置可用' : '⚪ 未配置 (需自備 Key)';
+        $('#srvKeyStatus').textContent = this.serverStatus.hasPublicApi ? '已啟用 (伺服器就緒)' : '未設定 (需使用個人金鑰)';
         $('#srvQuotaLeft').textContent = this.serverStatus.remainingToday;
       }
     } catch (e) {
-      $('#srvKeyStatus').textContent = '⚪ 離線模式';
+      $('#srvKeyStatus').textContent = '離線模式';
     }
     this.updateBadge();
   },
 
   updateBadge() {
     const b = $('#quotaText');
+    const dot = $('#quotaDot');
+    if (!b || !dot) return;
+
     if (this.userKey) {
-      b.textContent = '專屬 API 🟢';
-      b.parentElement.style.borderColor = '#3b82f6';
-      b.parentElement.style.color = '#93c5fd';
+      b.textContent = '專屬金鑰已啟用';
+      dot.className = 'status-dot blue';
     } else if (this.serverStatus.hasPublicApi) {
-      b.textContent = `公用額度: ${this.serverStatus.remainingToday} 次`;
-      b.parentElement.style.borderColor = '#047857';
-      b.parentElement.style.color = '#34d399';
+      b.textContent = `公用剩餘: ${this.serverStatus.remainingToday} 次`;
+      dot.className = 'status-dot green';
     } else {
-      b.textContent = '需自備 Key 🔑';
-      b.parentElement.style.borderColor = '#f59e0b';
-      b.parentElement.style.color = '#fbbf24';
+      b.textContent = '需設定金鑰';
+      dot.className = 'status-dot yellow';
     }
   },
 
@@ -126,7 +344,7 @@ window.ApiManager = {
       });
       if (!res.ok) {
         const err = await res.text();
-        throw new Error(`Gemini 官方 API 回傳錯誤 (${res.status}): ${err}`);
+        throw new Error(`Gemini API 回傳錯誤 (${res.status}): ${err}`);
       }
       const data = await res.json();
       return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -140,7 +358,7 @@ window.ApiManager = {
 
     if (res.status === 429) {
       this.checkServerStatus();
-      throw new Error('您今日的公用配額 (5次) 已用完。請點擊右上角「⚙️ API 設定」貼上免費申請的專屬 Key！');
+      throw new Error('今日公用免費配額 (5次) 已用完，請在右上角「API 設定」輸入您的個人金鑰');
     }
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: res.statusText }));
@@ -176,7 +394,7 @@ function switchTab(tabId) {
   if (btn) btn.click();
 }
 
-// ==================== 模組 1: 📐 梯形透視校正邏輯 ====================
+// ==================== 模組 1: 透視校正邏輯 ====================
 window.TrapezoidModule = {
   items: [],
   active: -1,
@@ -276,7 +494,7 @@ window.TrapezoidModule = {
           <div class="name">${esc(it.file.name)}</div>
           <div class="desc">${it.img.naturalWidth} × ${it.img.naturalHeight}</div>
         </div>
-        <button class="btn-remove" title="移除">×</button>
+        <button class="btn-remove" title="移除"><svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       `;
       div.onclick = () => { this.active = i; this.render(); };
       div.querySelector('.btn-remove').onclick = e => {
@@ -305,8 +523,8 @@ window.TrapezoidModule = {
     const it = this.items[this.active];
     if (!it) return;
     const stage = $('#trapStageArea');
-    const maxW = Math.max(100, stage.clientWidth - 40);
-    const maxH = Math.max(100, stage.clientHeight - 40);
+    const maxW = Math.max(100, stage.clientWidth - 32);
+    const maxH = Math.max(100, stage.clientHeight - 32);
     const scale = Math.min(maxW / it.img.naturalWidth, maxH / it.img.naturalHeight, 1);
     const w = Math.round(it.img.naturalWidth * scale);
     const h = Math.round(it.img.naturalHeight * scale);
@@ -334,22 +552,22 @@ window.TrapezoidModule = {
     ctx.beginPath();
     pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
     ctx.closePath();
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+    ctx.fillStyle = 'rgba(37, 99, 235, 0.2)';
     ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = '#60a5fa';
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#3b82f6';
     ctx.stroke();
 
     pts.forEach((p, i) => {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
-      ctx.fillStyle = (this.drag === i) ? '#f59e0b' : '#2563eb';
+      ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
+      ctx.fillStyle = (this.drag === i) ? '#d97706' : '#2563eb';
       ctx.fill();
       ctx.lineWidth = 2;
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
 
-      ctx.font = 'bold 11px system-ui';
+      ctx.font = '600 10px system-ui';
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -367,7 +585,7 @@ window.TrapezoidModule = {
       const sx = $('#trapPreview').width / it.img.naturalWidth;
       const sy = $('#trapPreview').height / it.img.naturalHeight;
 
-      let best = -1, minD = 30;
+      let best = -1, minD = 32;
       it.points.forEach((p, i) => {
         const d = Math.hypot(p.x * sx - x, p.y * sy - y);
         if (d < minD) { minD = d; best = i; }
@@ -538,20 +756,20 @@ window.TrapezoidModule = {
     a.href = URL.createObjectURL(blob);
     a.download = it.file.name.replace(/\.[^.]+$/, '') + '-校正.' + ext;
     a.click();
-    showToast('校正圖下載成功！', 'success');
+    showToast('校正影像下載成功', 'success');
   },
 
   async exportAllZip() {
     if (!this.items.length) return;
     const btn = $('#trapDownloadAllZip');
-    btn.disabled = true; btn.textContent = '打包中…';
+    btn.disabled = true; btn.textContent = '打包中...';
     try {
       const zip = new JSZip();
       const fmt = $('#trapFormat').value, q = Number($('#trapQuality').value);
       const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/png' ? 'png' : 'webp';
       for (let i = 0; i < this.items.length; i++) {
         const it = this.items[i];
-        btn.textContent = `打包 (${i+1}/${this.items.length})…`;
+        btn.textContent = `打包處理中 (${i+1}/${this.items.length})...`;
         const c = await this.getWarpedCanvas(it);
         const b = await canvasToBlob(c, fmt, q);
         zip.file(it.file.name.replace(/\.[^.]+$/, '') + '-校正.' + ext, b);
@@ -559,13 +777,13 @@ window.TrapezoidModule = {
       const blob = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `透視校正批次_${new Date().toISOString().slice(0,10)}.zip`;
+      a.download = `校正批次_${new Date().toISOString().slice(0,10)}.zip`;
       a.click();
-      showToast('ZIP 打包下載完成！', 'success');
+      showToast('ZIP 打包下載完成', 'success');
     } catch (e) {
       showToast('打包失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '批次下載全部 (ZIP)';
+      btn.disabled = false; btn.textContent = '批次打包下載 (ZIP)';
     }
   },
 
@@ -579,21 +797,21 @@ window.TrapezoidModule = {
     if (mod === 'bgremove') {
       window.BgRemoveModule.loadFile(file);
       switchTab('bgremove');
-      showToast('已傳送校正圖至「去背景」工作台', 'success');
+      showToast('已傳送校正影像至背景去除', 'success');
     } else if (mod === 'ocr') {
       window.OcrModule.loadFile(file);
       switchTab('ocr');
-      showToast('已傳送校正圖至「文字辨識」工作台', 'success');
+      showToast('已傳送校正影像至文字辨識', 'success');
     } else if (mod === 'convert') {
       window.ConvertModule.addFiles([file]);
       switchTab('convert');
-      showToast('已加入「PDF 轉檔與合成」清單', 'success');
+      showToast('已加入 PDF 轉檔與合成清單', 'success');
     }
   }
 };
 
 
-// ==================== 模組 2: 📄 格式轉檔 & PDF 合成器 ====================
+// ==================== 模組 2: 格式轉檔 & PDF 合成器 ====================
 window.ConvertModule = {
   files: [],
 
@@ -628,12 +846,11 @@ window.ConvertModule = {
       const div = document.createElement('div');
       div.className = 'file-item';
       div.innerHTML = `
-        <div style="font-size:18px">📄</div>
         <div class="meta">
           <div class="name">${esc(it.file.name)}</div>
           <div class="desc">${(it.file.size / 1024).toFixed(1)} KB</div>
         </div>
-        <button class="btn-remove" title="移除">×</button>
+        <button class="btn-remove" title="移除"><svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       `;
       div.querySelector('.btn-remove').onclick = () => {
         this.files.splice(i, 1);
@@ -644,9 +861,9 @@ window.ConvertModule = {
   },
 
   async buildPdf() {
-    if (!this.files.length) { showToast('請先上傳圖片或檔案', 'warning'); return; }
+    if (!this.files.length) { showToast('請先上傳檔案', 'warning'); return; }
     const btn = $('#btnBuildPdf');
-    btn.disabled = true; btn.textContent = '正在合成 PDF…';
+    btn.disabled = true; btn.textContent = '合成 PDF 中...';
 
     try {
       const pdfDoc = await PDFLib.PDFDocument.create();
@@ -655,7 +872,7 @@ window.ConvertModule = {
 
       for (let i = 0; i < this.files.length; i++) {
         const it = this.files[i];
-        btn.textContent = `正在處理第 ${i+1}/${this.files.length} 頁…`;
+        btn.textContent = `處理第 ${i+1}/${this.files.length} 頁...`;
 
         if (it.file.type.startsWith('image/')) {
           const bytes = await it.file.arrayBuffer();
@@ -698,20 +915,20 @@ window.ConvertModule = {
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = $('#pdfFilename').value || 'MediaCraft_Doc.pdf';
+      a.download = $('#pdfFilename').value || 'PobiMedia_Doc.pdf';
       a.click();
-      showToast('PDF 合成下載成功！', 'success');
+      showToast('PDF 合成下載成功', 'success');
     } catch (e) {
       showToast('PDF 產生失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '✨ 立即合成並下載 PDF 文件';
+      btn.disabled = false; btn.textContent = '合成並下載 PDF 文件';
     }
   },
 
   async batchConvertImages() {
     if (!this.files.length) { showToast('請先上傳圖片', 'warning'); return; }
     const btn = $('#btnBatchConvert');
-    btn.disabled = true; btn.textContent = '正在轉檔…';
+    btn.disabled = true; btn.textContent = '轉檔中...';
     try {
       const zip = new JSZip();
       const fmt = $('#convTargetFormat').value, q = Number($('#convQuality').value);
@@ -732,17 +949,17 @@ window.ConvertModule = {
       a.href = URL.createObjectURL(zipBlob);
       a.download = `轉檔批次_${new Date().toISOString().slice(0,10)}.zip`;
       a.click();
-      showToast('批次轉檔 ZIP 下載完成！', 'success');
+      showToast('批次轉檔 ZIP 下載完成', 'success');
     } catch (e) {
       showToast('轉檔失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '📦 批次轉換並下載 ZIP 壓縮包';
+      btn.disabled = false; btn.textContent = '批次轉換並下載 ZIP 壓縮包';
     }
   }
 };
 
 
-// ==================== 模組 3: ✂️ PDF 頁面分割器 ====================
+// ==================== 模組 3: PDF 頁面分割器 ====================
 window.PdfSplitModule = {
   pdfDoc: null,
   pdfBytes: null,
@@ -768,7 +985,7 @@ window.PdfSplitModule = {
     $('#splitPrevPage').onclick = () => { if (this.currentPage > 1) { this.currentPage--; this.renderPage(); } };
     $('#splitNextPage').onclick = () => { if (this.currentPage < this.totalPages) { this.currentPage++; this.renderPage(); } };
 
-    $('#splitApplyAll').onclick = () => showToast('已將此切割線設定套用至所有頁面！', 'success');
+    $('#splitApplyAll').onclick = () => showToast('已套用切割線設定至所有頁面', 'success');
     $('#btnExportSplitPdf').onclick = () => this.exportSplitPdf();
 
     this.initCutOverlay();
@@ -792,7 +1009,7 @@ window.PdfSplitModule = {
       $('#splitEmptyHint').style.display = 'none';
       $('#splitCanvasWrap').style.display = 'block';
       this.renderPage();
-      showToast(`成功載入 PDF，共 ${this.totalPages} 頁`, 'success');
+      showToast(`已載入 PDF 文件，共 ${this.totalPages} 頁`, 'success');
     } catch (e) {
       showToast('載入 PDF 失敗: ' + e.message, 'error');
     }
@@ -819,9 +1036,9 @@ window.PdfSplitModule = {
     ctx.clearRect(0, 0, ovr.width, ovr.height);
 
     const dir = $('#splitDirection').value;
-    ctx.lineWidth = 3;
-    ctx.setLineDash([8, 6]);
-    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 5]);
+    ctx.strokeStyle = '#dc2626';
 
     if (dir === 'vertical') {
       const cutX = ovr.width * this.splitRatio;
@@ -830,12 +1047,12 @@ window.PdfSplitModule = {
       ctx.stroke();
 
       ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
-      ctx.fillRect(cutX - 35, 10, 70, 22);
+      ctx.fillStyle = 'rgba(220, 38, 38, 0.9)';
+      ctx.fillRect(cutX - 25, 10, 50, 20);
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px system-ui';
+      ctx.font = '600 11px system-ui';
       ctx.textAlign = 'center';
-      ctx.fillText(`${Math.round(this.splitRatio * 100)}%`, cutX, 25);
+      ctx.fillText(`${Math.round(this.splitRatio * 100)}%`, cutX, 24);
     } else {
       const cutY = ovr.height * this.splitRatio;
       ctx.beginPath();
@@ -843,12 +1060,12 @@ window.PdfSplitModule = {
       ctx.stroke();
 
       ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
-      ctx.fillRect(10, cutY - 11, 60, 22);
+      ctx.fillStyle = 'rgba(220, 38, 38, 0.9)';
+      ctx.fillRect(10, cutY - 10, 50, 20);
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px system-ui';
+      ctx.font = '600 11px system-ui';
       ctx.textAlign = 'center';
-      ctx.fillText(`${Math.round(this.splitRatio * 100)}%`, 40, cutY + 4);
+      ctx.fillText(`${Math.round(this.splitRatio * 100)}%`, 35, cutY + 4);
     }
   },
 
@@ -882,7 +1099,7 @@ window.PdfSplitModule = {
   async exportSplitPdf() {
     if (!this.pdfBytes) return;
     const btn = $('#btnExportSplitPdf');
-    btn.disabled = true; btn.textContent = '正在分割生成新 PDF…';
+    btn.disabled = true; btn.textContent = '分割生成新 PDF 中...';
 
     try {
       const srcDoc = await PDFLib.PDFDocument.load(this.pdfBytes);
@@ -892,7 +1109,7 @@ window.PdfSplitModule = {
       const total = srcDoc.getPageCount();
 
       for (let i = 0; i < total; i++) {
-        btn.textContent = `分割處理第 ${i+1}/${total} 頁…`;
+        btn.textContent = `處理第 ${i+1}/${total} 頁...`;
         const origPage = srcDoc.getPage(i);
         const { width, height } = origPage.getSize();
         const [embeddedPage] = await outDoc.embedPdf(srcDoc, [i]);
@@ -932,17 +1149,17 @@ window.PdfSplitModule = {
       a.href = URL.createObjectURL(blob);
       a.download = `分割完成_共${outDoc.getPageCount()}頁.pdf`;
       a.click();
-      showToast(`PDF 分割成功！已生成 ${outDoc.getPageCount()} 頁新文件`, 'success');
+      showToast(`PDF 分割成功，共產生 ${outDoc.getPageCount()} 頁文件`, 'success');
     } catch (e) {
       showToast('分割匯出失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '💾 立即分割並匯出新 PDF';
+      btn.disabled = false; btn.textContent = '分割並匯出新 PDF';
     }
   }
 };
 
 
-// ==================== 模組 4: 🔍 圖片文字識別 (OCR) ====================
+// ==================== 模組 4: 文字辨識 OCR ====================
 window.OcrModule = {
   currentImg: null,
   cropRect: null,
@@ -964,7 +1181,7 @@ window.OcrModule = {
     $('#btnStartOcr').onclick = () => this.runOcr();
     $('#btnCopyOcrText').onclick = () => {
       navigator.clipboard.writeText($('#ocrResultText').value);
-      showToast('文字已複製到剪貼簿！', 'success');
+      showToast('文字已複製至剪貼簿', 'success');
     };
     $('#btnSaveOcrTxt').onclick = () => this.saveText('txt');
     $('#btnSaveOcrMd').onclick = () => this.saveText('md');
@@ -990,8 +1207,8 @@ window.OcrModule = {
   drawCanvas() {
     if (!this.currentImg) return;
     const stage = $('#ocrStageArea');
-    const maxW = Math.max(100, stage.clientWidth - 40);
-    const maxH = Math.max(100, stage.clientHeight - 40);
+    const maxW = Math.max(100, stage.clientWidth - 32);
+    const maxH = Math.max(100, stage.clientHeight - 32);
     const scale = Math.min(maxW / this.currentImg.naturalWidth, maxH / this.currentImg.naturalHeight, 1);
     const w = Math.round(this.currentImg.naturalWidth * scale);
     const h = Math.round(this.currentImg.naturalHeight * scale);
@@ -1010,9 +1227,9 @@ window.OcrModule = {
     ctx.clearRect(0, 0, ovr.width, ovr.height);
     if (!this.cropRect) return;
 
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.25)';
+    ctx.fillStyle = 'rgba(37, 99, 235, 0.25)';
     ctx.fillRect(this.cropRect.x, this.cropRect.y, this.cropRect.w, this.cropRect.h);
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.strokeStyle = '#3b82f6';
     ctx.strokeRect(this.cropRect.x, this.cropRect.y, this.cropRect.w, this.cropRect.h);
   },
@@ -1076,7 +1293,7 @@ window.OcrModule = {
       }
 
       if (engine === 'tesseract') {
-        $('#ocrProgressLabel').textContent = '載入 Tesseract WASM 引擎…';
+        $('#ocrProgressLabel').textContent = '載入 Tesseract WASM 引擎...';
         const lang = $('#ocrLanguage').value;
         const worker = await Tesseract.createWorker(lang, 1, {
           logger: m => {
@@ -1084,16 +1301,16 @@ window.OcrModule = {
               const p = Math.round(m.progress * 100);
               $('#ocrProgressBar').style.width = p + '%';
               $('#ocrProgressVal').textContent = p + '%';
-              $('#ocrProgressLabel').textContent = '文字識別中…';
+              $('#ocrProgressLabel').textContent = '文字辨識中...';
             }
           }
         });
         const ret = await worker.recognize(c);
         await worker.terminate();
         $('#ocrResultText').value = ret.data.text;
-        showToast('Tesseract 本地辨識完成！', 'success');
+        showToast('Tesseract 本地辨識完成', 'success');
       } else {
-        $('#ocrProgressLabel').textContent = 'Gemini AI 視覺深度分析中…';
+        $('#ocrProgressLabel').textContent = 'Gemini AI 視覺深度辨識中...';
         $('#ocrProgressBar').style.width = '50%';
         $('#ocrProgressVal').textContent = '50%';
 
@@ -1103,7 +1320,7 @@ window.OcrModule = {
         $('#ocrResultText').value = text;
         $('#ocrProgressBar').style.width = '100%';
         $('#ocrProgressVal').textContent = '100%';
-        showToast('Gemini AI 辨識完成！', 'success');
+        showToast('Gemini AI 辨識完成', 'success');
       }
     } catch (e) {
       showToast('OCR 辨識失敗: ' + e.message, 'error');
@@ -1121,12 +1338,12 @@ window.OcrModule = {
     a.href = URL.createObjectURL(blob);
     a.download = `OCR_提取結果_${new Date().toISOString().slice(0,10)}.${ext}`;
     a.click();
-    showToast(`已下載 .${ext} 檔案！`, 'success');
+    showToast(`已下載 .${ext} 檔案`, 'success');
   }
 };
 
 
-// ==================== 模組 5: 🪄 智慧去背景 ====================
+// ==================== 模組 5: 背景去除 ====================
 window.BgRemoveModule = {
   currentImg: null,
   rawCanvas: null,
@@ -1196,7 +1413,7 @@ window.BgRemoveModule = {
       $('#bgCanvasWrap').style.display = 'block';
 
       this.updateDisplay();
-      showToast('圖片已載入，點擊畫布背景可即時魔術棒去背！', 'success');
+      showToast('圖片已載入，點選背景可執行魔術棒去背', 'success');
     } catch (e) {
       showToast('載入圖片失敗: ' + e.message, 'error');
     }
@@ -1205,8 +1422,8 @@ window.BgRemoveModule = {
   updateDisplay() {
     if (!this.resultCanvas) return;
     const stage = $('#bgStageArea');
-    const maxW = Math.max(100, stage.clientWidth - 40);
-    const maxH = Math.max(100, stage.clientHeight - 40);
+    const maxW = Math.max(100, stage.clientWidth - 32);
+    const maxH = Math.max(100, stage.clientHeight - 32);
     const scale = Math.min(maxW / this.resultCanvas.width, maxH / this.resultCanvas.height, 1);
     const w = Math.round(this.resultCanvas.width * scale);
     const h = Math.round(this.resultCanvas.height * scale);
@@ -1241,7 +1458,7 @@ window.BgRemoveModule = {
     }
     ctx.putImageData(imgData, 0, 0);
     this.updateDisplay();
-    showToast('已一鍵清除白色背景！', 'success');
+    showToast('已清除純白色背景', 'success');
   },
 
   initMagicWandClick() {
@@ -1299,12 +1516,13 @@ window.BgRemoveModule = {
 
     ctx.putImageData(imgData, 0, 0);
     this.updateDisplay();
-    showToast('魔術棒去背完成！', 'success');
+    showToast('魔術棒去背完成', 'success');
   },
 
   setBrush(mode) {
     this.brushMode = this.brushMode === mode ? 'none' : mode;
-    showToast(`筆刷模式: ${this.brushMode === 'erase' ? '🧹 擦除' : this.brushMode === 'restore' ? '🖌️ 保留' : '點選'}`, 'info');
+    const modeLabel = this.brushMode === 'erase' ? '擦除模式' : this.brushMode === 'restore' ? '保留模式' : '點選模式';
+    showToast('筆刷切換：' + modeLabel, 'info');
   },
 
   paintBrush(x, y) {
@@ -1334,18 +1552,18 @@ window.BgRemoveModule = {
     }
 
     const btn = $('#btnRunBgRemove');
-    btn.disabled = true; btn.textContent = '🤖 Gemini AI 去背分析中…';
+    btn.disabled = true; btn.textContent = 'AI 去背分析中...';
 
     try {
       const b64 = this.rawCanvas.toDataURL('image/png').split(',')[1];
       const prompt = '請精準分析圖片主體的外形輪廓與邊界。請去除背景。';
-      showToast('正在透過 Gemini 深度模型智慧分離前後景…', 'info');
+      showToast('正在透過 Gemini 深度模型智慧分離前後景...', 'info');
       this.magicWandFloodFill(0, 0);
-      showToast('AI 去背處理完成！', 'success');
+      showToast('AI 去背處理完成', 'success');
     } catch (e) {
       showToast('AI 去背失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '✨ 執行智慧去背';
+      btn.disabled = false; btn.textContent = '執行去背處理';
     }
   },
 
@@ -1368,7 +1586,7 @@ window.BgRemoveModule = {
     a.href = URL.createObjectURL(blob);
     a.download = `去背結果_${new Date().toISOString().slice(0,10)}.${type}`;
     a.click();
-    showToast(`${type.toUpperCase()} 下載成功！`, 'success');
+    showToast(type.toUpperCase() + ' 檔案下載成功', 'success');
   },
 
   async sendToModule(mod) {
@@ -1379,16 +1597,17 @@ window.BgRemoveModule = {
     if (mod === 'ocr') {
       window.OcrModule.loadFile(file);
       switchTab('ocr');
-      showToast('已傳送去背圖至「文字識別」', 'success');
+      showToast('已傳送去背影像至文字辨識', 'success');
     } else if (mod === 'convert') {
       window.ConvertModule.addFiles([file]);
       switchTab('convert');
-      showToast('已加入「PDF 轉檔與合成」清單', 'success');
+      showToast('已加入 PDF 轉檔與合成清單', 'success');
     }
   }
 };
 
 window.addEventListener('DOMContentLoaded', () => {
+  window.AuthManager.init();
   window.ApiManager.init();
   window.TrapezoidModule.init();
   window.ConvertModule.init();

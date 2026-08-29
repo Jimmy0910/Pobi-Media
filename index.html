@@ -2,8 +2,9 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>MediaCraft Suite｜全能媒體與 PDF 編輯工作台</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<title>Pobi Media｜多媒體與 PDF 專業工作站</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='36' y2='36' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2338bdf8'/%3E%3Cstop offset='50%25' stop-color='%232563eb'/%3E%3Cstop offset='100%25' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3ClinearGradient id='p' x1='0' y1='0' x2='0' y2='36' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2360a5fa'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='36' height='36' rx='8' fill='%230f172a'/%3E%3Cpath d='M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8' stroke='url(%23g)' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolygon points='19,13 25,17.5 19,22' fill='url(%23p)'/%3E%3C/svg%3E">
 <!-- 核心第三方函式庫 -->
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.9/dist/pdf-lib.min.js"></script>
@@ -11,48 +12,94 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 :root {
-  --bg-main: #0b0f19;
-  --bg-panel: #111827;
-  --bg-card: #1f2937;
-  --bg-subtle: #374151;
-  --border-color: #374151;
-  --border-hover: #4b5563;
-  --text-main: #f9fafb;
-  --text-muted: #9ca3af;
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  --secondary: #10b981;
-  --secondary-hover: #059669;
-  --danger: #ef4444;
-  --danger-bg: #450a0a;
-  --warning: #f59e0b;
-  --purple: #8b5cf6;
-  --header-bg: #090d16;
+  --bg-main: #0a0d14;
+  --bg-panel: #111724;
+  --bg-card: #172033;
+  --bg-card-hover: #1e2942;
+  --bg-input: #0e1320;
+  --border: #232d42;
+  --border-focus: #3b82f6;
+  --border-subtle: #1c2436;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: rgba(37, 99, 235, 0.12);
+  --success: #059669;
+  --success-hover: #047857;
+  --success-light: rgba(5, 150, 105, 0.12);
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-light: rgba(220, 38, 38, 0.12);
+  --warning: #d97706;
+  --indigo: #4f46e5;
+  --indigo-hover: #4338ca;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif;
-  color: var(--text-main);
-  background: var(--bg-main);
-  height: 100vh;
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
   height: 100dvh;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-main);
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
   display: flex;
   flex-direction: column;
 }
 
+/* ==================== SVG 圖示系統 ==================== */
+.icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: middle;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.icon-lg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ==================== 頂部導航列 ==================== */
 header {
-  background: var(--header-bg);
-  border-bottom: 1px solid #1f2937;
-  height: 58px;
+  height: 52px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  z-index: 30;
+  padding-top: var(--safe-top);
   gap: 12px;
+  z-index: 40;
   flex-shrink: 0;
 }
 
@@ -60,65 +107,123 @@ header {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 0;
+  min-width: max-content;
+  user-select: none;
 }
-.brand-icon {
+
+.brand-logo {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: bold;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.35));
 }
-.brand h1 {
+
+.brand-logo svg {
+  width: 100%;
+  height: 100%;
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
   font-size: 15px;
   font-weight: 700;
-  white-space: nowrap;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  line-height: 1.2;
 }
-.brand small {
-  color: #94a3b8;
+
+.brand-subtitle {
   font-size: 11px;
-  font-weight: normal;
-  display: block;
+  color: var(--text-secondary);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+/* Modal 品牌標誌與 Hero 區域 */
+.modal-brand-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(124, 58, 237, 0.08));
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-brand-logo {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 12px rgba(37, 99, 235, 0.4));
+}
+
+.modal-brand-text h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 2px 0;
+}
+
+.modal-brand-text p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* 網頁內部空狀態 / 舞台浮水印商標 */
+.empty-state-logo {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px auto;
+  opacity: 0.85;
+  filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.25));
 }
 
 .tabs-nav {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: #111827;
-  padding: 4px;
-  border-radius: 10px;
-  border: 1px solid #1f2937;
+  gap: 2px;
+  background: var(--bg-main);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.tabs-nav::-webkit-scrollbar {
+  display: none;
+}
+
 .tab-btn {
   border: 0;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   padding: 6px 12px;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  transition: all .15s ease;
+  transition: all 0.15s ease;
 }
 .tab-btn:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
 }
 .tab-btn.active {
   background: var(--primary);
   color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  font-weight: 600;
 }
 
 .header-actions {
@@ -128,62 +233,134 @@ header {
   flex-shrink: 0;
 }
 
+/* ==================== 按鈕與互動元件 ==================== */
 button {
-  border: 0;
-  border-radius: 8px;
-  padding: 7px 14px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  background: #374151;
-  color: #f9fafb;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  background: var(--bg-card);
+  color: var(--text-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: all .15s ease;
-  user-select: none;
-}
-button:hover:not(:disabled) { background: #4b5563; }
-button:active:not(:disabled) { transform: scale(0.98); }
-button.primary { background: var(--primary); color: #fff; }
-button.primary:hover:not(:disabled) { background: var(--primary-hover); }
-button.secondary { background: var(--secondary); color: #fff; }
-button.secondary:hover:not(:disabled) { background: var(--secondary-hover); }
-button.purple { background: var(--purple); color: #fff; }
-button.purple:hover:not(:disabled) { background: #7c3aed; }
-button.danger { background: var(--danger-bg); color: #f87171; border: 1px solid #7f1d1d; }
-button.danger:hover:not(:disabled) { background: #7f1d1d; color: #fff; }
-button:disabled { opacity: .45; cursor: not-allowed; }
-
-.badge {
-  background: #2563eb;
-  color: #fff;
-  font-size: 11px;
-  padding: 1px 6px;
-  border-radius: 10px;
-  font-weight: bold;
-}
-.badge-quota {
-  background: #065f46;
-  color: #34d399;
-  border: 1px solid #047857;
-  font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 12px;
   cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+  min-height: 32px;
+}
+button:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  border-color: #3b4863;
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+button.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+button.btn-success {
+  background: var(--success);
+  border-color: var(--success);
+  color: #ffffff;
+}
+button.btn-success:hover:not(:disabled) {
+  background: var(--success-hover);
+  border-color: var(--success-hover);
+}
+
+button.btn-danger {
+  background: var(--danger-light);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #f87171;
+}
+button.btn-danger:hover:not(:disabled) {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #ffffff;
+}
+
+button.btn-indigo {
+  background: var(--indigo);
+  border-color: var(--indigo);
+  color: #ffffff;
+}
+button.btn-indigo:hover:not(:disabled) {
+  background: var(--indigo-hover);
+  border-color: var(--indigo-hover);
+}
+
+.status-badge {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--bg-main);
+  color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.status-badge:hover {
+  border-color: var(--border-focus);
+}
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.status-dot.green {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+.status-dot.blue {
+  background: #3b82f6;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
+}
+.status-dot.yellow {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
 }
 
+.count-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+/* ==================== 視圖容器佈局 ==================== */
 .main-container {
   flex: 1;
   position: relative;
   overflow: hidden;
-  height: calc(100vh - 58px);
+  height: calc(100vh - 52px);
+  height: calc(100dvh - 52px);
 }
+
 .tool-view {
   position: absolute;
   top: 0;
@@ -198,7 +375,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 .layout-3col {
   display: grid;
-  grid-template-columns: 280px 1fr 310px;
+  grid-template-columns: 280px 1fr 300px;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -214,47 +391,51 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 .panel {
   background: var(--bg-panel);
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px;
+  padding: 14px;
+  gap: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 .panel.right {
   border-right: 0;
-  border-left: 1px solid var(--border-color);
+  border-left: 1px solid var(--border);
 }
-.panel-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #e5e7eb;
-  margin-bottom: 12px;
+
+.panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-bottom: 2px;
 }
 
 .stage {
   flex: 1;
-  background: radial-gradient(#1e293b 1px, #0b0f19 1px);
-  background-size: 20px 20px;
+  background: #080b12;
   position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
+
 .stage-toolbar {
-  background: rgba(17, 24, 39, 0.85);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border-color);
-  padding: 8px 16px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 14px;
   display: flex;
   align-items: center;
   gap: 8px;
   z-index: 10;
   flex-wrap: wrap;
 }
+
 .stage-canvas-area {
   flex: 1;
   display: flex;
@@ -262,35 +443,39 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   justify-content: center;
   position: relative;
   overflow: auto;
-  padding: 20px;
+  padding: 16px;
+  touch-action: pan-x pan-y;
 }
 
+/* ==================== 檔案上傳區 ==================== */
 .drop-zone {
-  border: 2px dashed #4b5563;
-  border-radius: 10px;
-  padding: 20px 14px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 12px;
   text-align: center;
-  background: rgba(31, 41, 55, 0.4);
-  transition: all .2s;
+  background: var(--bg-input);
+  transition: all 0.2s ease;
   cursor: pointer;
-  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 .drop-zone:hover, .drop-zone.dragover {
   border-color: var(--primary);
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--primary-light);
 }
 .drop-zone input[type=file] {
   display: none;
 }
-.drop-zone strong {
-  display: block;
-  font-size: 13px;
-  color: #e5e7eb;
-  margin-bottom: 4px;
+.drop-zone-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
-.drop-zone span {
+.drop-zone-desc {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 .file-list {
@@ -298,34 +483,37 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: 100px;
+  gap: 6px;
+  min-height: 80px;
+  scrollbar-width: thin;
 }
+
 .file-item {
   display: flex;
   align-items: center;
   gap: 10px;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
   cursor: pointer;
-  transition: all .15s;
+  transition: all 0.15s ease;
 }
 .file-item:hover {
-  border-color: var(--border-hover);
-  background: #283548;
+  background: var(--bg-card-hover);
+  border-color: #3b4863;
 }
 .file-item.active {
   border-color: var(--primary);
-  background: rgba(59, 130, 246, 0.15);
+  background: var(--primary-light);
 }
 .file-item img.thumb {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: #000;
+  flex-shrink: 0;
 }
 .file-item .meta {
   flex: 1;
@@ -333,8 +521,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 .file-item .name {
   font-size: 12px;
-  font-weight: 600;
-  color: #f3f4f6;
+  font-weight: 500;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -342,83 +530,95 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .file-item .desc {
   font-size: 11px;
   color: var(--text-muted);
+  font-family: var(--font-mono);
 }
 .file-item .btn-remove {
   background: transparent;
-  color: #9ca3af;
-  padding: 4px 6px;
-  font-size: 16px;
-  border-radius: 4px;
+  border: 0;
+  color: var(--text-muted);
+  padding: 4px;
+  min-height: auto;
+  border-radius: var(--radius-sm);
 }
 .file-item .btn-remove:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  color: #f87171;
+  background: rgba(220, 38, 38, 0.1);
 }
 
-.config-sec {
+/* ==================== 模組設定區塊 ==================== */
+.config-group {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   padding: 12px;
-  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.config-sec h3 {
-  font-size: 12px;
-  color: #93c5fd;
+.config-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 10px;
 }
+
 .config-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
   font-size: 12px;
   gap: 8px;
 }
-.config-row:last-child {
-  margin-bottom: 0;
-}
 .config-row label {
-  color: #d1d5db;
+  color: var(--text-secondary);
   font-size: 12px;
   white-space: nowrap;
 }
-select, input[type=text], input[type=number], textarea {
-  background: #111827;
-  border: 1px solid #374151;
-  border-radius: 6px;
-  color: #f9fafb;
-  padding: 6px 8px;
+
+select, input[type=text], input[type=password], input[type=number], textarea {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-family: inherit;
   font-size: 12px;
   outline: none;
   width: 100%;
+  transition: border-color 0.15s ease;
 }
-select:focus, input[type=text]:focus, input[type=number]:focus, textarea:focus {
-  border-color: var(--primary);
+select:focus, input[type=text]:focus, input[type=password]:focus, input[type=number]:focus, textarea:focus {
+  border-color: var(--border-focus);
 }
+
 input[type=range] {
   flex: 1;
   accent-color: var(--primary);
+  cursor: pointer;
 }
 
 .checkerboard {
-  background-image: linear-gradient(45deg, #1f2937 25%, transparent 25%),
-                    linear-gradient(-45deg, #1f2937 25%, transparent 25%),
-                    linear-gradient(45deg, transparent 75%, #1f2937 75%),
-                    linear-gradient(-45deg, transparent 75%, #1f2937 75%);
+  background-image: linear-gradient(45deg, #131a29 25%, transparent 25%),
+                    linear-gradient(-45deg, #131a29 25%, transparent 25%),
+                    linear-gradient(45deg, transparent 75%, #131a29 75%),
+                    linear-gradient(-45deg, transparent 75%, #131a29 75%);
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
 }
 
+/* ==================== 互動畫布覆蓋層 ==================== */
+canvas {
+  display: block;
+  user-select: none;
+  touch-action: none;
+}
+
+/* ==================== 視窗 Modal ==================== */
 .modal-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
   display: none;
   align-items: center;
@@ -430,48 +630,50 @@ input[type=range] {
   display: flex;
 }
 .modal-box {
-  background: #111827;
-  border: 1px solid #374151;
-  border-radius: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 520px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
+  max-width: 500px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .modal-header {
   padding: 14px 18px;
-  border-bottom: 1px solid #1f2937;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 .modal-header h2 {
-  font-size: 15px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 .modal-body {
   padding: 18px;
   overflow-y: auto;
   max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 .modal-footer {
   padding: 12px 18px;
-  border-top: 1px solid #1f2937;
-  background: #090d16;
+  border-top: 1px solid var(--border);
+  background: var(--bg-main);
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
 }
 
+/* ==================== 系統通知 Toast ==================== */
 .toast-container {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 20px;
+  right: 20px;
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -479,27 +681,29 @@ input[type=range] {
   pointer-events: none;
 }
 .toast {
-  background: #1f2937;
-  color: #fff;
-  border: 1px solid #374151;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 13px;
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   gap: 8px;
-  animation: slideIn .2s ease-out;
+  animation: toastIn 0.2s ease-out;
   pointer-events: auto;
 }
-.toast.success { border-color: #10b981; }
-.toast.error { border-color: #ef4444; background: #450a0a; }
-.toast.warning { border-color: #f59e0b; }
-@keyframes slideIn {
-  from { transform: translateY(20px); opacity: 0; }
+.toast.success { border-color: var(--success); }
+.toast.error { border-color: var(--danger); background: #261114; }
+.toast.warning { border-color: var(--warning); }
+@keyframes toastIn {
+  from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* ==================== 響應式優化 (RWD / 行動直橫式) ==================== */
 @media (max-width: 1024px) {
   .layout-3col {
     grid-template-columns: 1fr;
@@ -510,60 +714,524 @@ input[type=range] {
     grid-template-rows: auto 1fr;
   }
   .panel {
-    max-height: 220px;
+    max-height: 240px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel.right {
+    border-left: 0;
+    border-top: 1px solid var(--border);
   }
 }
+
+@media (max-width: 768px) {
+  header {
+    height: auto;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .brand-subtitle {
+    display: none;
+  }
+  .tabs-nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+  .tab-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  .main-container {
+    height: calc(100dvh - 86px);
+  }
+  .panel {
+    max-height: 200px;
+    padding: 10px;
+  }
+  .stage-toolbar {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  button {
+    min-height: 36px;
+    padding: 6px 10px;
+  }
+}
+
+/* 行動裝置橫式優化 (Mobile Landscape) */
+@media (max-height: 550px) and (orientation: landscape) {
+  header {
+    height: 44px;
+    padding: 4px 12px;
+  }
+  .brand-title {
+    font-size: 12px;
+  }
+  .tab-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .main-container {
+    height: calc(100dvh - 44px);
+  }
+  .layout-3col {
+    grid-template-columns: 200px 1fr 220px;
+    grid-template-rows: 100%;
+  }
+  .layout-2col {
+    grid-template-columns: 240px 1fr;
+    grid-template-rows: 100%;
+  }
+  .panel {
+    max-height: 100%;
+    padding: 8px;
+    gap: 8px;
+  }
+}
+
+/* ==================== 全螢幕進入前登入與註冊閘門 (Auth Gate) ==================== */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 20%, #151f38 0%, #080c14 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+  backdrop-filter: blur(12px);
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.auth-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.auth-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(37, 99, 235, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: authCardIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes authCardIn {
+  from { transform: scale(0.95) translateY(12px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.auth-header {
+  padding: 24px 24px 16px 24px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-logo-badge {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px auto;
+  filter: drop-shadow(0 4px 16px rgba(37, 99, 235, 0.45));
+}
+
+.auth-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.auth-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.auth-tabs {
+  display: flex;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border);
+  padding: 4px;
+  gap: 4px;
+}
+
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 36px;
+}
+
+.auth-tab.active {
+  background: var(--bg-panel);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.auth-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-field label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.auth-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-input-wrap input {
+  padding-right: 42px;
+  height: 38px;
+  font-size: 13px;
+}
+
+.auth-toggle-pwd {
+  position: absolute;
+  right: 4px;
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  font-size: 11px;
+  min-height: auto;
+  cursor: pointer;
+}
+
+.auth-toggle-pwd:hover {
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.auth-submit-btn {
+  height: 40px;
+  font-size: 13px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  border: 1px solid #1d4ed8;
+  color: #ffffff;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auth-submit-btn:hover {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 11px;
+  margin: 4px 0;
+}
+
+.auth-divider::before, .auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-guest-btn {
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.auth-guest-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-focus);
+}
+
+.auth-alert {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  display: none;
+  line-height: 1.4;
+}
+.auth-alert.error {
+  display: block;
+  background: rgba(220, 38, 38, 0.15);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: #fca5a5;
+}
+.auth-alert.success {
+  display: block;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+/* 頂部導航欄使用者身分標籤 */
+.header-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  color: var(--text-primary);
+  min-height: 28px;
+  cursor: pointer;
+}
+
+.header-user-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.btn-signout {
+  padding: 4px 8px;
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  min-height: 28px;
+  cursor: pointer;
+}
+.btn-signout:hover {
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(220, 38, 38, 0.4);
+  color: #fca5a5;
+}
+
+
 
 </style>
 </head>
 <body>
 
+<!-- ==================== 全螢幕進入前登入與註冊閘門 ==================== -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo-badge">
+        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+          <defs>
+            <linearGradient id="pobi-auth-g" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="50%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </linearGradient>
+            <linearGradient id="pobi-auth-p" x1="0" y1="0" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#60a5fa"/>
+              <stop offset="100%" stop-color="#a855f7"/>
+            </linearGradient>
+          </defs>
+          <rect width="36" height="36" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1.2"/>
+          <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="url(#pobi-auth-g)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <polygon points="19,13 25,17.5 19,22" fill="url(#pobi-auth-p)"/>
+        </svg>
+      </div>
+      <div class="auth-title">Pobi Media</div>
+      <div class="auth-subtitle">多媒體與 PDF 專業工作站</div>
+    </div>
+
+    <!-- 登入 / 註冊切換標籤 -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabAuthLogin" data-mode="login">會員登入</button>
+      <button class="auth-tab" id="tabAuthRegister" data-mode="register">註冊新帳號</button>
+    </div>
+
+    <!-- 表單區 -->
+    <form class="auth-body" id="authForm" onsubmit="return false;">
+      <div class="auth-alert" id="authAlert"></div>
+
+      <div class="auth-field">
+        <label for="authUsername">帳號 / 電子郵件</label>
+        <div class="auth-input-wrap">
+          <input type="text" id="authUsername" placeholder="請輸入帳號或 Email" required autocomplete="username">
+        </div>
+      </div>
+
+      <div class="auth-field">
+        <label for="authPassword">密碼</label>
+        <div class="auth-input-wrap">
+          <input type="password" id="authPassword" placeholder="請輸入密碼" required autocomplete="current-password">
+          <button type="button" class="auth-toggle-pwd" id="btnToggleAuthPwd">顯示</button>
+        </div>
+      </div>
+
+      <div class="auth-field" id="authConfirmPwdRow" style="display:none">
+        <label for="authConfirmPassword">確認密碼</label>
+        <div class="auth-input-wrap">
+          <input type="password" id="authConfirmPassword" placeholder="請再次輸入密碼" autocomplete="new-password">
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-secondary)">
+          <input type="checkbox" id="authRemember" checked> 記住登入狀態
+        </label>
+      </div>
+
+      <div class="auth-actions">
+        <button type="submit" class="auth-submit-btn" id="btnAuthSubmit">
+          登入進入工作站
+        </button>
+        <div class="auth-divider">或</div>
+        <button type="button" class="auth-guest-btn" id="btnAuthGuest">
+          以訪客身份直接體驗
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- 頂部導航 -->
 <header>
   <div class="brand">
-    <div class="brand-icon">⚡</div>
-    <div>
-      <h1>MediaCraft Suite</h1>
-      <small>純前端與 Gemini AI 雙軌多功能媒體工作台</small>
+    <div class="brand-logo" title="Pobi Media Studio">
+      <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="pobi-hdr-g" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#38bdf8"/>
+            <stop offset="50%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#7c3aed"/>
+          </linearGradient>
+          <linearGradient id="pobi-hdr-p" x1="0" y1="0" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#60a5fa"/>
+            <stop offset="100%" stop-color="#a855f7"/>
+          </linearGradient>
+        </defs>
+        <rect width="36" height="36" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1.2"/>
+        <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="url(#pobi-hdr-g)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <polygon points="19,13 25,17.5 19,22" fill="url(#pobi-hdr-p)"/>
+      </svg>
+    </div>
+    <div class="brand-info">
+      <span class="brand-title">Pobi Media</span>
+      <span class="brand-subtitle">多媒體與 PDF 專業工作站</span>
     </div>
   </div>
 
   <!-- 工具切換標籤 -->
   <nav class="tabs-nav">
-    <button class="tab-btn active" data-tab="trapezoid">📐 梯形透視校正</button>
-    <button class="tab-btn" data-tab="convert">📄 格式轉檔 & PDF</button>
-    <button class="tab-btn" data-tab="split">✂️ PDF 頁面分割</button>
-    <button class="tab-btn" data-tab="ocr">🔍 圖片文字識別</button>
-    <button class="tab-btn" data-tab="bgremove">🪄 智慧去背景</button>
+    <button class="tab-btn active" data-tab="trapezoid">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 20h16L19 4H5L4 20z"/></svg>
+      透視校正
+    </button>
+    <button class="tab-btn" data-tab="convert">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      格式轉換與 PDF
+    </button>
+    <button class="tab-btn" data-tab="split">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+      PDF 頁面分割
+    </button>
+    <button class="tab-btn" data-tab="ocr">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 7V4h3"/><path d="M20 7V4h-3"/><path d="M4 17v3h3"/><path d="M20 17v3h-3"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+      文字辨識 OCR
+    </button>
+    <button class="tab-btn" data-tab="bgremove">
+      <svg class="icon" viewBox="0 0 24 24"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
+      背景去除
+    </button>
   </nav>
 
   <div class="header-actions">
-    <div id="quotaBadge" class="badge-quota" title="點擊設定 API Key">
-      🔑 <span id="quotaText">AI 連線中…</span>
+    <div id="headerUserBtn" class="header-user-btn" title="使用者資訊">
+      <div class="header-user-avatar" id="headerUserAvatar">U</div>
+      <span id="headerUserName">使用者</span>
     </div>
-    <button id="btnOpenApiModal" style="padding:5px 10px;font-size:12px">⚙️ API 設定</button>
+    <div id="quotaBadge" class="status-badge" title="點擊設定 API 金鑰">
+      <span class="status-dot green" id="quotaDot"></span>
+      <span id="quotaText">連線中...</span>
+    </div>
+    <button id="btnOpenApiModal" style="padding:5px 10px;font-size:12px">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      API 設定
+    </button>
+    <button id="btnSignOut" class="btn-signout" title="登出目前帳號">登出</button>
   </div>
 </header>
 
 <!-- 主容器 -->
 <div class="main-container">
 
-  <!-- ==================== 模組 1: 📐 梯形透視校正 ==================== -->
+  <!-- ==================== 模組 1: 透視校正 ==================== -->
   <section id="view-trapezoid" class="tool-view active">
     <div class="layout-3col">
       <!-- 左側清單 -->
       <aside class="panel">
-        <div class="panel-title">
-          📁 待校正圖片 <span id="trapCount" class="badge">0</span>
+        <div class="panel-header">
+          <span>待處理圖片</span>
+          <span id="trapCount" class="count-badge">0</span>
         </div>
         <div class="drop-zone" id="trapDrop">
-          <strong>拖曳圖片至此處</strong>
-          <span>JPG, PNG, WEBP</span>
+          <svg class="icon-lg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div class="drop-zone-title">拖曳圖片或點擊選取</div>
+          <div class="drop-zone-desc">JPG, PNG, WebP</div>
           <input type="file" id="trapFileIn" accept="image/*" multiple>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:11px;color:#9ca3af">清單</span>
-          <button id="trapClearAll" class="danger" style="padding:2px 8px;font-size:11px">清空</button>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:var(--text-muted)">檔案清單</span>
+          <button id="trapClearAll" class="btn-danger" style="padding:2px 8px;font-size:11px;min-height:24px">清空</button>
         </div>
         <div class="file-list" id="trapList"></div>
       </aside>
@@ -571,17 +1239,23 @@ input[type=range] {
       <!-- 中間畫布 -->
       <main class="stage">
         <div class="stage-toolbar">
-          <button id="trapReset">🔄 重設四角</button>
-          <button id="trapAuto">🎯 自動置中</button>
-          <button id="trapRotL">↶ 左轉 90°</button>
-          <button id="trapRotR">↷ 右轉 90°</button>
+          <button id="trapReset">重設四角</button>
+          <button id="trapAuto">自動置中</button>
+          <button id="trapRotL">向左旋轉 90°</button>
+          <button id="trapRotR">向右旋轉 90°</button>
           <div style="flex:1"></div>
-          <span style="font-size:12px;color:#9ca3af">💡 拖曳四角圓點進行透視拉平</span>
+          <span style="font-size:11px;color:var(--text-muted)">拖曳四個角點進行透視拉平</span>
         </div>
         <div class="stage-canvas-area" id="trapStageArea">
-          <div id="trapEmptyHint" style="color:#6b7280;font-size:13px;text-align:center">
-            請點擊左側「拖曳圖片」開始透視校正<br>
-            <span style="font-size:11px;color:#4b5563">全 WebGL 前端即時演算，保護隱私不外洩</span>
+          <div id="trapEmptyHint" style="color:var(--text-muted);font-size:12px;text-align:center">
+            <div class="empty-state-logo">
+              <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                <rect width="36" height="36" rx="8" fill="#111724" stroke="#1e293b" stroke-width="1.2"/>
+                <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
+              </svg>
+            </div>
+            請上傳圖片以進行 WebGL 硬體加速透視校正
           </div>
           <div id="trapCanvasWrap" style="position:relative;display:none">
             <canvas id="trapPreview"></canvas>
@@ -592,9 +1266,9 @@ input[type=range] {
 
       <!-- 右側設定與匯出 -->
       <aside class="panel right">
-        <div class="panel-title">⚙️ 輸出與跨工具傳送</div>
-        <div class="config-sec">
-          <h3>輸出格式</h3>
+        <div class="panel-header">輸出與傳送</div>
+        <div class="config-group">
+          <div class="config-group-title">影像輸出設定</div>
           <div class="config-row">
             <label>格式</label>
             <select id="trapFormat">
@@ -604,14 +1278,14 @@ input[type=range] {
             </select>
           </div>
           <div class="config-row">
-            <label>壓縮品質</label>
+            <label>品質</label>
             <input type="range" id="trapQuality" min="0.5" max="1" step="0.01" value="0.92">
-            <span id="trapQualityVal" style="width:35px;text-align:right;font-size:11px">92%</span>
+            <span id="trapQualityVal" style="width:32px;text-align:right;font-size:11px;font-family:var(--font-mono)">92%</span>
           </div>
           <div class="config-row">
-            <label>最大長邊</label>
+            <label>長邊限制</label>
             <select id="trapMaxSize">
-              <option value="0">原解析度</option>
+              <option value="0">原始解析度</option>
               <option value="3000">3000 px</option>
               <option value="2000">2000 px</option>
               <option value="1500">1500 px</option>
@@ -619,100 +1293,102 @@ input[type=range] {
           </div>
         </div>
 
-        <div class="config-sec">
-          <h3>🚀 快速跨工具傳送</h3>
+        <div class="config-group">
+          <div class="config-group-title">跨工具傳送</div>
           <div style="display:flex;flex-direction:column;gap:6px">
-            <button id="trapSendToBg" class="purple" style="font-size:12px">🪄 傳送校正圖至「去背景」</button>
-            <button id="trapSendToOcr" style="font-size:12px">🔍 傳送校正圖至「文字識別 (OCR)」</button>
-            <button id="trapSendToPdf" style="font-size:12px">📄 加入「PDF 轉檔與合成」</button>
+            <button id="trapSendToBg" class="btn-indigo">傳送至背景去除</button>
+            <button id="trapSendToOcr">傳送至文字辨識 (OCR)</button>
+            <button id="trapSendToPdf">加入 PDF 合成清單</button>
           </div>
         </div>
 
-        <div class="config-sec">
-          <h3>檔案下載</h3>
-          <button id="trapDownloadCurrent" class="secondary" style="width:100%;margin-bottom:8px" disabled>下載目前校正圖</button>
-          <button id="trapDownloadAllZip" class="primary" style="width:100%" disabled>批次下載全部 (ZIP)</button>
+        <div class="config-group">
+          <div class="config-group-title">檔案匯出</div>
+          <button id="trapDownloadCurrent" class="btn-success" style="width:100%" disabled>下載目前校正影像</button>
+          <button id="trapDownloadAllZip" class="btn-primary" style="width:100%" disabled>批次打包下載 (ZIP)</button>
         </div>
       </aside>
     </div>
   </section>
 
 
-  <!-- ==================== 模組 2: 📄 格式轉檔 & PDF 合成器 ==================== -->
+  <!-- ==================== 模組 2: 格式轉檔 & PDF 合成器 ==================== -->
   <section id="view-convert" class="tool-view">
     <div class="layout-2col">
-      <!-- 左側設定與清單 -->
+      <!-- 左側清單 -->
       <aside class="panel">
-        <div class="panel-title">
-          📄 待轉換檔案 <span id="convCount" class="badge">0</span>
+        <div class="panel-header">
+          <span>待轉換檔案</span>
+          <span id="convCount" class="count-badge">0</span>
         </div>
         <div class="drop-zone" id="convDrop">
-          <strong>拖曳圖片或文字檔至此</strong>
-          <span>JPG, PNG, WebP, SVG, BMP, TXT</span>
+          <svg class="icon-lg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div class="drop-zone-title">拖曳檔案至此處</div>
+          <div class="drop-zone-desc">JPG, PNG, WebP, SVG, BMP, TXT, MD</div>
           <input type="file" id="convFileIn" accept="image/*,.txt,.md" multiple>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:11px;color:#9ca3af">佇列清單</span>
-          <button id="convClearAll" class="danger" style="padding:2px 8px;font-size:11px">清空</button>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:var(--text-muted)">佇列清單</span>
+          <button id="convClearAll" class="btn-danger" style="padding:2px 8px;font-size:11px;min-height:24px">清空</button>
         </div>
         <div class="file-list" id="convList"></div>
       </aside>
 
-      <!-- 右側轉換工作區與匯出設定 -->
+      <!-- 右側轉換設定與匯出 -->
       <main class="stage" style="padding:24px;overflow-y:auto">
-        <div style="max-width:800px;margin:0 auto;width:100%">
-          <div class="config-sec" style="padding:18px;margin-bottom:18px">
-            <h2 style="font-size:16px;color:#f3f4f6;margin-bottom:14px;display:flex;align-items:center;gap:8px">
-              📑 模式 A：將多圖/文件合併生成 PDF
-            </h2>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div style="max-width:760px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:18px">
+          <div class="config-group" style="padding:18px">
+            <div class="config-group-title" style="font-size:13px;color:var(--text-primary)">
+              模式 A：多檔合併生成 PDF 文件
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div class="config-row">
                 <label>頁面版面</label>
                 <select id="pdfPageLayout">
-                  <option value="a4">標準 A4 紙張</option>
+                  <option value="a4">標準 A4</option>
                   <option value="fit">自動適應圖片原圖比例</option>
                   <option value="letter">US Letter</option>
                 </select>
               </div>
               <div class="config-row">
-                <label>邊距 (Margin)</label>
+                <label>頁面邊距</label>
                 <select id="pdfMargin">
                   <option value="20">標準邊距 (20pt)</option>
-                  <option value="0">滿版無邊距 (0pt)</option>
+                  <option value="0">無邊距 (0pt)</option>
                   <option value="40">寬邊距 (40pt)</option>
                 </select>
               </div>
               <div class="config-row" style="grid-column:1/-1">
-                <label>PDF 檔名</label>
-                <input type="text" id="pdfFilename" value="MediaCraft_Merged.pdf">
+                <label>輸出檔名</label>
+                <input type="text" id="pdfFilename" value="PobiMedia_Merged.pdf">
               </div>
             </div>
-            <button id="btnBuildPdf" class="primary" style="padding:10px 20px;font-size:14px;width:100%">
-              ✨ 立即合成並下載 PDF 文件
+            <button id="btnBuildPdf" class="btn-primary" style="padding:10px;font-size:13px;width:100%;margin-top:4px">
+              合成並下載 PDF 文件
             </button>
           </div>
 
-          <div class="config-sec" style="padding:18px">
-            <h2 style="font-size:16px;color:#f3f4f6;margin-bottom:14px;display:flex;align-items:center;gap:8px">
-              🔄 模式 B：批次圖片格式轉換
-            </h2>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div class="config-group" style="padding:18px">
+            <div class="config-group-title" style="font-size:13px;color:var(--text-primary)">
+              模式 B：批次圖片格式轉換
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div class="config-row">
-                <label>目標輸出格式</label>
+                <label>目標格式</label>
                 <select id="convTargetFormat">
-                  <option value="image/webp">WEBP (極致壓縮)</option>
-                  <option value="image/jpeg">JPG (相片相容性最高)</option>
+                  <option value="image/webp">WEBP (高效壓縮)</option>
+                  <option value="image/jpeg">JPG (最高相容性)</option>
                   <option value="image/png">PNG (無失真保留透明度)</option>
                 </select>
               </div>
               <div class="config-row">
-                <label>輸出品質</label>
+                <label>品質</label>
                 <input type="range" id="convQuality" min="0.5" max="1" step="0.01" value="0.9">
-                <span id="convQualityVal" style="font-size:11px;width:35px;text-align:right">90%</span>
+                <span id="convQualityVal" style="font-size:11px;width:32px;text-align:right;font-family:var(--font-mono)">90%</span>
               </div>
             </div>
-            <button id="btnBatchConvert" class="secondary" style="padding:10px 20px;font-size:14px;width:100%">
-              📦 批次轉換並下載 ZIP 壓縮包
+            <button id="btnBatchConvert" class="btn-success" style="padding:10px;font-size:13px;width:100%;margin-top:4px">
+              批次轉換並下載 ZIP 壓縮包
             </button>
           </div>
         </div>
@@ -721,66 +1397,76 @@ input[type=range] {
   </section>
 
 
-  <!-- ==================== 模組 3: ✂️ PDF 頁面分割器 ==================== -->
+  <!-- ==================== 模組 3: PDF 頁面分割器 ==================== -->
   <section id="view-split" class="tool-view">
     <div class="layout-2col">
-      <!-- 左側頁面瀏覽與分割設定 -->
+      <!-- 左側設定 -->
       <aside class="panel">
-        <div class="panel-title">
-          ✂️ PDF 頁面清單 <span id="splitPageCount" class="badge">0 頁</span>
+        <div class="panel-header">
+          <span>PDF 頁面分割</span>
+          <span id="splitPageCount" class="count-badge">0 頁</span>
         </div>
         <div class="drop-zone" id="splitDrop">
-          <strong>選擇或拖曳 PDF 檔案</strong>
-          <span>純前端解析，支援雙面/跨頁掃描分割</span>
+          <svg class="icon-lg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div class="drop-zone-title">選擇或拖曳 PDF 文件</div>
+          <div class="drop-zone-desc">純本地解析，支援雙頁掃描對切</div>
           <input type="file" id="splitFileIn" accept="application/pdf">
         </div>
-        <div class="config-sec">
-          <h3>⚡ 常用一鍵對切預設</h3>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
-            <button id="splitPresetV50" class="primary" style="font-size:11px">垂直 50/50 對半</button>
-            <button id="splitPresetH50" class="secondary" style="font-size:11px">水平 50/50 對半</button>
+
+        <div class="config-group">
+          <div class="config-group-title">分割設定</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <button id="splitPresetV50" class="btn-primary" style="font-size:11px">垂直 50/50 對半</button>
+            <button id="splitPresetH50" class="btn-success" style="font-size:11px">水平 50/50 對半</button>
           </div>
           <div class="config-row">
             <label>分割方向</label>
             <select id="splitDirection">
-              <option value="vertical">左右垂直剖半 (書籍雙頁掃描)</option>
-              <option value="horizontal">上下水平分割</option>
+              <option value="vertical">左右垂直對切 (書籍雙頁掃描)</option>
+              <option value="horizontal">上下水平對切</option>
             </select>
           </div>
           <div class="config-row">
             <label>閱讀順序</label>
             <select id="splitOrder">
-              <option value="ltr">從左到右 (左頁第1頁、右頁第2頁)</option>
-              <option value="rtl">從右到左 (日文書籍/直排漫畫)</option>
+              <option value="ltr">由左至右 (左頁優先)</option>
+              <option value="rtl">由右至左 (日文書籍 / 漫畫)</option>
             </select>
           </div>
           <div class="config-row">
-            <label>分割線位置</label>
+            <label>分割位置</label>
             <input type="range" id="splitRatio" min="10" max="90" value="50">
-            <span id="splitRatioVal" style="font-size:11px;width:35px;text-align:right">50%</span>
+            <span id="splitRatioVal" style="font-size:11px;width:32px;text-align:right;font-family:var(--font-mono)">50%</span>
           </div>
-          <button id="splitApplyAll" style="width:100%;margin-top:6px;font-size:12px">📋 套用分割線至所有頁面</button>
+          <button id="splitApplyAll" style="width:100%;font-size:11px">套用至所有頁面</button>
         </div>
 
-        <button id="btnExportSplitPdf" class="primary" style="width:100%;padding:10px;font-size:14px" disabled>
-          💾 立即分割並匯出新 PDF
+        <button id="btnExportSplitPdf" class="btn-primary" style="width:100%;padding:10px;font-size:13px" disabled>
+          分割並匯出新 PDF
         </button>
       </aside>
 
-      <!-- 右側預覽畫布與拖曳裁切線 -->
+      <!-- 右側預覽畫布 -->
       <main class="stage">
         <div class="stage-toolbar">
-          <button id="splitPrevPage">◀ 上一頁</button>
-          <span id="splitPageIndicator" style="font-size:13px;font-weight:bold;color:#e5e7eb">第 0 / 0 頁</span>
-          <button id="splitNextPage">下一頁 ▶</button>
+          <button id="splitPrevPage">上一頁</button>
+          <span id="splitPageIndicator" style="font-size:12px;font-weight:600;color:var(--text-primary);font-family:var(--font-mono)">第 0 / 0 頁</span>
+          <button id="splitNextPage">下一頁</button>
           <div style="flex:1"></div>
-          <span style="font-size:12px;color:#9ca3af">💡 可在畫布上直接拖曳紅色分割虛線</span>
+          <span style="font-size:11px;color:var(--text-muted)">可直接在預覽圖上拖曳紅色虛線</span>
         </div>
         <div class="stage-canvas-area" id="splitStageArea">
-          <div id="splitEmptyHint" style="color:#6b7280;font-size:13px;text-align:center">
-            請在左側上傳 PDF 檔案以預覽與設定切割線
+          <div id="splitEmptyHint" style="color:var(--text-muted);font-size:12px;text-align:center">
+            <div class="empty-state-logo">
+              <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                <rect width="36" height="36" rx="8" fill="#111724" stroke="#1e293b" stroke-width="1.2"/>
+                <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
+              </svg>
+            </div>
+            請上傳 PDF 文件以設定裁切分割線
           </div>
-          <div id="splitCanvasWrap" style="position:relative;display:none;box-shadow:0 10px 25px rgba(0,0,0,0.6)">
+          <div id="splitCanvasWrap" style="position:relative;display:none;box-shadow:0 10px 30px rgba(0,0,0,0.5)">
             <canvas id="splitPdfCanvas"></canvas>
             <canvas id="splitCutOverlay" style="position:absolute;top:0;left:0;cursor:ew-resize"></canvas>
           </div>
@@ -790,29 +1476,30 @@ input[type=range] {
   </section>
 
 
-  <!-- ==================== 模組 4: 🔍 圖片文字識別 (OCR) ==================== -->
+  <!-- ==================== 模組 4: 文字辨識 OCR ==================== -->
   <section id="view-ocr" class="tool-view">
     <div class="layout-3col">
-      <!-- 左側控制面板 -->
+      <!-- 左側設定 -->
       <aside class="panel">
-        <div class="panel-title">🔍 OCR 辨識設定</div>
+        <div class="panel-header">OCR 辨識設定</div>
         <div class="drop-zone" id="ocrDrop">
-          <strong>上傳圖片進行文字識別</strong>
-          <span>JPG, PNG, WEBP, 螢幕截圖</span>
+          <svg class="icon-lg" viewBox="0 0 24 24"><path d="M4 7V4h3"/><path d="M20 7V4h-3"/><path d="M4 17v3h3"/><path d="M20 17v3h-3"/></svg>
+          <div class="drop-zone-title">上傳辨識圖片</div>
+          <div class="drop-zone-desc">JPG, PNG, WebP</div>
           <input type="file" id="ocrFileIn" accept="image/*">
         </div>
 
-        <div class="config-sec">
-          <h3>🧠 辨識引擎</h3>
+        <div class="config-group">
+          <div class="config-group-title">辨識引擎</div>
           <div class="config-row">
-            <label>引擎模式</label>
+            <label>模式</label>
             <select id="ocrEngine">
-              <option value="gemini">🤖 Gemini AI 視覺 (超高精準/排版)</option>
-              <option value="tesseract">⚡ Tesseract.js WASM (離線/純本地)</option>
+              <option value="gemini">Gemini AI 視覺 (高精準 / 排版還原)</option>
+              <option value="tesseract">Tesseract.js WASM (純本地離線)</option>
             </select>
           </div>
           <div class="config-row" id="ocrLangRow" style="display:none">
-            <label>Tesseract 語系</label>
+            <label>語系</label>
             <select id="ocrLanguage">
               <option value="chi_tra+eng">繁體中文 + 英文</option>
               <option value="chi_sim+eng">簡體中文 + 英文</option>
@@ -821,39 +1508,46 @@ input[type=range] {
             </select>
           </div>
           <div class="config-row">
-            <label>辨識範圍</label>
+            <label>範圍</label>
             <select id="ocrScope">
               <option value="full">全圖辨識</option>
-              <option value="crop">畫布框選局部範圍</option>
+              <option value="crop">畫布框選區域</option>
             </select>
           </div>
         </div>
 
-        <button id="btnStartOcr" class="primary" style="width:100%;padding:10px;font-size:14px" disabled>
-          🚀 開始文字辨識
+        <button id="btnStartOcr" class="btn-primary" style="width:100%;padding:10px;font-size:13px" disabled>
+          開始文字辨識
         </button>
 
-        <div id="ocrProgressWrap" style="margin-top:12px;display:none">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:#9ca3af;margin-bottom:4px">
-            <span id="ocrProgressLabel">處理中…</span>
-            <span id="ocrProgressVal">0%</span>
+        <div id="ocrProgressWrap" style="margin-top:8px;display:none">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px">
+            <span id="ocrProgressLabel">處理中...</span>
+            <span id="ocrProgressVal" style="font-family:var(--font-mono)">0%</span>
           </div>
-          <div style="height:6px;background:#374151;border-radius:3px;overflow:hidden">
+          <div style="height:4px;background:var(--bg-input);border-radius:2px;overflow:hidden">
             <div id="ocrProgressBar" style="height:100%;width:0%;background:var(--primary);transition:width .2s"></div>
           </div>
         </div>
       </aside>
 
-      <!-- 中間圖片預覽與框選區 -->
+      <!-- 中間預覽與選取 -->
       <main class="stage">
         <div class="stage-toolbar">
-          <span style="font-size:13px;font-weight:600;color:#e5e7eb">圖片預覽與框選</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text-primary)">影像預覽與選取</span>
           <div style="flex:1"></div>
-          <span style="font-size:12px;color:#9ca3af">提示：選擇「框選範圍」可在圖上拉出藍色矩形框</span>
+          <span style="font-size:11px;color:var(--text-muted)">提示：選擇「畫布框選」可在圖上拖曳選取矩形</span>
         </div>
         <div class="stage-canvas-area" id="ocrStageArea">
-          <div id="ocrEmptyHint" style="color:#6b7280;font-size:13px;text-align:center">
-            請在左側上傳圖片開始 OCR 辨識
+          <div id="ocrEmptyHint" style="color:var(--text-muted);font-size:12px;text-align:center">
+            <div class="empty-state-logo">
+              <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                <rect width="36" height="36" rx="8" fill="#111724" stroke="#1e293b" stroke-width="1.2"/>
+                <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
+              </svg>
+            </div>
+            請上傳圖片以開始文字辨識
           </div>
           <div id="ocrCanvasWrap" style="position:relative;display:none">
             <canvas id="ocrImgCanvas"></canvas>
@@ -862,74 +1556,75 @@ input[type=range] {
         </div>
       </main>
 
-      <!-- 右側提取文字編輯區 -->
+      <!-- 右側文字輸出 -->
       <aside class="panel right">
-        <div class="panel-title">
-          📝 辨識結果
-          <button id="btnCopyOcrText" style="padding:3px 8px;font-size:11px">📋 複製文字</button>
+        <div class="panel-header">
+          <span>辨識文字結果</span>
+          <button id="btnCopyOcrText" style="padding:2px 8px;font-size:11px;min-height:24px">複製文字</button>
         </div>
-        <textarea id="ocrResultText" style="flex:1;min-height:300px;font-family:monospace;line-height:1.5;resize:none;margin-bottom:12px" placeholder="辨識後的文字將顯示於此處，可直接編輯與排版..."></textarea>
+        <textarea id="ocrResultText" style="flex:1;min-height:260px;font-family:var(--font-mono);line-height:1.6;resize:none" placeholder="辨識文字將輸出於此處，支援直接編輯..."></textarea>
 
         <div style="display:flex;gap:6px">
-          <button id="btnSaveOcrTxt" class="secondary" style="flex:1;font-size:12px">💾 下載 TXT</button>
-          <button id="btnSaveOcrMd" class="purple" style="flex:1;font-size:12px">💾 下載 Markdown</button>
+          <button id="btnSaveOcrTxt" class="btn-success" style="flex:1;font-size:11px">下載 TXT</button>
+          <button id="btnSaveOcrMd" class="btn-indigo" style="flex:1;font-size:11px">下載 Markdown</button>
         </div>
       </aside>
     </div>
   </section>
 
 
-  <!-- ==================== 模組 5: 🪄 智慧去背景 ==================== -->
+  <!-- ==================== 模組 5: 背景去除 ==================== -->
   <section id="view-bgremove" class="tool-view">
     <div class="layout-3col">
-      <!-- 左側去背工具箱 -->
+      <!-- 左側去背設定 -->
       <aside class="panel">
-        <div class="panel-title">🪄 去背引擎與工具</div>
+        <div class="panel-header">去背工具</div>
         <div class="drop-zone" id="bgDrop">
-          <strong>上傳圖片進行去背</strong>
-          <span>人像、商品、印章、證件</span>
+          <svg class="icon-lg" viewBox="0 0 24 24"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/></svg>
+          <div class="drop-zone-title">上傳去背圖片</div>
+          <div class="drop-zone-desc">人像、物件、簽名印章</div>
           <input type="file" id="bgFileIn" accept="image/*">
         </div>
 
-        <div class="config-sec">
-          <h3>去背核心演算法</h3>
+        <div class="config-group">
+          <div class="config-group-title">處理核心</div>
           <div class="config-row">
-            <label>處理模式</label>
+            <label>模式</label>
             <select id="bgEngine">
-              <option value="fast_algo">⚡ 極速純演算法 (魔術棒/純色/印章)</option>
-              <option value="gemini_ai">🤖 Gemini AI 智慧語意分割</option>
+              <option value="fast_algo">極速純演算法 (魔術棒 / 印章清底)</option>
+              <option value="gemini_ai">Gemini AI 語意輪廓分析</option>
             </select>
           </div>
           <div id="bgAlgoSettings">
             <div class="config-row">
               <label>容差 (Tolerance)</label>
               <input type="range" id="bgTolerance" min="1" max="100" value="32">
-              <span id="bgToleranceVal" style="font-size:11px;width:30px;text-align:right">32</span>
+              <span id="bgToleranceVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">32</span>
             </div>
             <div class="config-row">
               <label>邊緣羽化</label>
               <input type="range" id="bgFeather" min="0" max="10" value="1">
-              <span id="bgFeatherVal" style="font-size:11px;width:30px;text-align:right">1px</span>
+              <span id="bgFeatherVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">1px</span>
             </div>
-            <button id="btnAutoWhiteClean" style="width:100%;font-size:12px;margin-top:6px">
-              📄 一鍵去除白色底 (印章/公文簽名)
+            <button id="btnAutoWhiteClean" style="width:100%;font-size:11px;margin-top:4px">
+              清除純白背景 (公文簽名/印鑑)
             </button>
           </div>
-          <button id="btnRunBgRemove" class="primary" style="width:100%;margin-top:10px;padding:9px;font-size:13px" disabled>
-            ✨ 執行智慧去背
+          <button id="btnRunBgRemove" class="btn-primary" style="width:100%;margin-top:8px;padding:8px" disabled>
+            執行去背處理
           </button>
         </div>
 
-        <div class="config-sec">
-          <h3>筆刷手動修補</h3>
-          <div style="display:flex;gap:6px;margin-bottom:8px">
-            <button id="bgBrushErase" class="danger" style="flex:1;font-size:11px">🧹 擦除背景</button>
-            <button id="bgBrushRestore" class="secondary" style="flex:1;font-size:11px">🖌️ 保留主體</button>
+        <div class="config-group">
+          <div class="config-group-title">手動筆刷修整</div>
+          <div style="display:flex;gap:6px">
+            <button id="bgBrushErase" class="btn-danger" style="flex:1;font-size:11px">擦除背景</button>
+            <button id="bgBrushRestore" class="btn-success" style="flex:1;font-size:11px">保留主體</button>
           </div>
           <div class="config-row">
-            <label>筆刷直徑</label>
+            <label>筆刷大小</label>
             <input type="range" id="bgBrushSize" min="5" max="80" value="25">
-            <span id="bgBrushSizeVal" style="font-size:11px;width:30px;text-align:right">25</span>
+            <span id="bgBrushSizeVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">25</span>
           </div>
         </div>
       </aside>
@@ -937,13 +1632,20 @@ input[type=range] {
       <!-- 中間畫布 -->
       <main class="stage">
         <div class="stage-toolbar">
-          <span style="font-size:13px;font-weight:600;color:#e5e7eb">去背畫布預覽</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text-primary)">去背畫布預覽</span>
           <div style="flex:1"></div>
-          <span style="font-size:12px;color:#9ca3af">點擊背景任意點可觸發魔術棒去背</span>
+          <span style="font-size:11px;color:var(--text-muted)">點選影像背景可觸發魔術棒去背</span>
         </div>
         <div class="stage-canvas-area checkerboard" id="bgStageArea">
-          <div id="bgEmptyHint" style="color:#6b7280;font-size:13px;text-align:center">
-            請在左側上傳圖片開始去背處理
+          <div id="bgEmptyHint" style="color:var(--text-muted);font-size:12px;text-align:center">
+            <div class="empty-state-logo">
+              <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                <rect width="36" height="36" rx="8" fill="#111724" stroke="#1e293b" stroke-width="1.2"/>
+                <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
+              </svg>
+            </div>
+            請上傳圖片以開始去背處理
           </div>
           <div id="bgCanvasWrap" style="position:relative;display:none">
             <canvas id="bgResultCanvas"></canvas>
@@ -954,42 +1656,42 @@ input[type=range] {
 
       <!-- 右側背景替換與匯出 -->
       <aside class="panel right">
-        <div class="panel-title">🎨 背景替換與下載</div>
-        <div class="config-sec">
-          <h3>替換背景底色</h3>
+        <div class="panel-header">背景替換與匯出</div>
+        <div class="config-group">
+          <div class="config-group-title">替換背景顏色</div>
           <div class="config-row">
             <label>背景模式</label>
             <select id="bgReplaceType">
-              <option value="transparent">透明 (PNG 棋盤格)</option>
+              <option value="transparent">透明背景 (PNG)</option>
               <option value="color">純色背景</option>
             </select>
           </div>
           <div class="config-row" id="bgColorRow" style="display:none">
-            <label>底色選擇</label>
-            <input type="color" id="bgCustomColor" value="#ffffff" style="width:45px;height:30px;padding:0;cursor:pointer">
+            <label>選擇色彩</label>
+            <input type="color" id="bgCustomColor" value="#ffffff" style="width:40px;height:26px;padding:0;cursor:pointer">
             <div style="display:flex;gap:4px">
-              <button class="color-quick" data-c="#ffffff" style="padding:2px 6px;background:#fff;color:#000;font-size:10px">白</button>
-              <button class="color-quick" data-c="#ef4444" style="padding:2px 6px;background:#ef4444;color:#fff;font-size:10px">紅底證件</button>
-              <button class="color-quick" data-c="#3b82f6" style="padding:2px 6px;background:#3b82f6;color:#fff;font-size:10px">藍底證件</button>
+              <button class="color-quick" data-c="#ffffff" style="padding:2px 6px;background:#fff;color:#000;font-size:10px;min-height:22px">白底</button>
+              <button class="color-quick" data-c="#dc2626" style="padding:2px 6px;background:#dc2626;color:#fff;font-size:10px;min-height:22px">紅底</button>
+              <button class="color-quick" data-c="#2563eb" style="padding:2px 6px;background:#2563eb;color:#fff;font-size:10px;min-height:22px">藍底</button>
             </div>
           </div>
         </div>
 
-        <div class="config-sec">
-          <h3>🚀 傳送至其他工具</h3>
+        <div class="config-group">
+          <div class="config-group-title">跨工具傳送</div>
           <div style="display:flex;flex-direction:column;gap:6px">
-            <button id="bgSendToOcr" style="font-size:12px">🔍 傳送去背圖至 OCR</button>
-            <button id="bgSendToPdf" style="font-size:12px">📄 傳送去背圖至 PDF 合成</button>
+            <button id="bgSendToOcr">傳送至文字辨識</button>
+            <button id="bgSendToPdf">加入 PDF 合成清單</button>
           </div>
         </div>
 
-        <div class="config-sec">
-          <h3>下載檔案</h3>
-          <button id="btnDownloadBgPng" class="primary" style="width:100%;margin-bottom:8px" disabled>
-            💾 下載透明 PNG (高畫質)
+        <div class="config-group">
+          <div class="config-group-title">檔案匯出</div>
+          <button id="btnDownloadBgPng" class="btn-primary" style="width:100%" disabled>
+            下載透明 PNG
           </button>
-          <button id="btnDownloadBgJpg" class="secondary" style="width:100%" disabled>
-            💾 下載 JPG
+          <button id="btnDownloadBgJpg" class="btn-success" style="width:100%" disabled>
+            下載 JPG
           </button>
         </div>
       </aside>
@@ -998,50 +1700,76 @@ input[type=range] {
 
 </div>
 
-<!-- ==================== 全域 API Key 設定 Modal ==================== -->
+<!-- ==================== 全域 API Key 設定視窗 ==================== -->
 <div class="modal-backdrop" id="apiModal">
   <div class="modal-box">
     <div class="modal-header">
-      <h2>🔑 Google Gemini AI 設定與配額</h2>
-      <button id="btnCloseApiModal" style="background:transparent;color:#9ca3af;font-size:16px;padding:4px">✕</button>
+      <h2>Pobi Media 帳戶與 API 設定</h2>
+      <button id="btnCloseApiModal" style="background:transparent;border:0;color:var(--text-muted);padding:4px;min-height:auto;display:flex;align-items:center" title="關閉">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-brand-hero">
+      <div class="modal-brand-logo">
+        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+          <defs>
+            <linearGradient id="pobi-modal-g" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="50%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </linearGradient>
+            <linearGradient id="pobi-modal-p" x1="0" y1="0" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#60a5fa"/>
+              <stop offset="100%" stop-color="#a855f7"/>
+            </linearGradient>
+          </defs>
+          <rect width="36" height="36" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1.2"/>
+          <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="url(#pobi-modal-g)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <polygon points="19,13 25,17.5 19,22" fill="url(#pobi-modal-p)"/>
+        </svg>
+      </div>
+      <div class="modal-brand-text">
+        <h3>Pobi Media Studio</h3>
+        <p>雲端無伺服器與本地混合智能媒體處理引擎</p>
+      </div>
     </div>
     <div class="modal-body">
-      <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;line-height:1.6">
-        💡 <b>雙重配額機制說明：</b><br>
-        1. <b>免費公用配額</b>：每人每日提供 <b>5 次</b> 免費 AI 調用（所有使用者共用全局配額防護）。<br>
-        2. <b>自備專屬 Key</b>：若您需要大量使用，可前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#60a5fa;text-decoration:underline">Google AI Studio</a> 免費申請專屬 API Key，貼入下方即可享有無限制使用！
+      <div style="background:var(--primary-light);border:1px solid rgba(37,99,235,0.25);border-radius:var(--radius-sm);padding:12px;font-size:12px;line-height:1.6">
+        <strong>配額機制說明：</strong><br>
+        1. <strong>免費公用配額</strong>：每位使用者每日提供 5 次免費 AI 調用額度。<br>
+        2. <strong>自備專屬金鑰</strong>：若需無限制使用，請至 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#60a5fa;text-decoration:underline">Google AI Studio</a> 申請 API Key 並填入下方。
       </div>
 
-      <div class="config-sec">
-        <h3>您的專屬 Gemini API Key (選填)</h3>
-        <div style="position:relative;margin-bottom:8px">
-          <input type="password" id="inputUserApiKey" placeholder="貼上 AIzaSy 開頭的 Gemini API Key..." style="padding-right:60px">
-          <button id="btnToggleKeyVisibility" style="position:absolute;right:4px;top:4px;padding:3px 8px;font-size:11px;background:#374151">顯示</button>
+      <div class="config-group">
+        <div class="config-group-title">個人專屬 Gemini API Key (選填)</div>
+        <div style="position:relative">
+          <input type="password" id="inputUserApiKey" placeholder="請輸入 AIzaSy 開頭的金鑰..." style="padding-right:54px">
+          <button id="btnToggleKeyVisibility" style="position:absolute;right:3px;top:3px;padding:2px 8px;font-size:11px;min-height:26px">顯示</button>
         </div>
-        <div style="font-size:11px;color:#9ca3af;line-height:1.5;margin-bottom:8px">
-          🔒 <b>安全性承諾</b>：您的 API Key 100% 僅儲存於您個人的瀏覽器 (localStorage)，所有 AI 請求由瀏覽器直連 Google 官方伺服器，伺服器不留存任何記錄。
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.5">
+          金鑰僅儲存於您個人的瀏覽器端 (localStorage)，所有請求由前端直連 Google 官方伺服器，伺服器不留存任何記錄。
         </div>
         <div style="display:flex;gap:8px">
-          <button id="btnSaveApiKey" class="primary" style="flex:1;font-size:12px">💾 儲存自備 Key</button>
-          <button id="btnClearApiKey" class="danger" style="font-size:12px">🗑️ 清除 Key</button>
+          <button id="btnSaveApiKey" class="btn-primary" style="flex:1">儲存金鑰</button>
+          <button id="btnClearApiKey" class="btn-danger">清除</button>
         </div>
       </div>
 
-      <div class="config-sec">
-        <h3>公用伺服器連線狀態</h3>
-        <div style="font-size:12px;color:#d1d5db;line-height:1.6">
-          • 後端伺服器公用 Key：<span id="srvKeyStatus" style="color:#f59e0b">檢測中…</span><br>
-          • 您今日公用剩餘額度：<span id="srvQuotaLeft" style="font-weight:bold;color:#34d399">--</span> 次
+      <div class="config-group">
+        <div class="config-group-title">伺服器公用狀態</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">
+          • 伺服器公用金鑰：<span id="srvKeyStatus" style="font-weight:500">檢測中...</span><br>
+          • 今日公用剩餘額度：<span id="srvQuotaLeft" style="font-weight:600;color:#10b981;font-family:var(--font-mono)">--</span> 次
         </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button id="btnCloseApiModal2" class="secondary">關閉</button>
+      <button id="btnCloseApiModal2">關閉</button>
     </div>
   </div>
 </div>
 
-<!-- 全域 Toast 容器 -->
+<!-- 全域通知容器 -->
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- 核心業務邏輯指令碼 -->
@@ -1051,17 +1779,17 @@ const $ = s => document.querySelectorAll(s);
 
 function showToast(msg, type = 'info') {
   const c = $('#toastContainer');
+  if (!c) return;
   const t = document.createElement('div');
   t.className = `toast ${type}`;
-  const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
-  t.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
+  t.innerHTML = `<span>${msg}</span>`;
   c.appendChild(t);
   setTimeout(() => {
     t.style.opacity = '0';
-    t.style.transform = 'translateY(10px)';
-    t.style.transition = 'all .3s';
-    setTimeout(() => t.remove(), 300);
-  }, 3500);
+    t.style.transform = 'translateY(8px)';
+    t.style.transition = 'all .25s ease';
+    setTimeout(() => t.remove(), 250);
+  }, 3200);
 }
 
 function uid() { return crypto.randomUUID(); }
@@ -1083,6 +1811,224 @@ function canvasToBlob(canvas, type = 'image/png', quality = 0.92) {
   return new Promise(res => canvas.toBlob(res, type, quality));
 }
 
+// ==================== 身份驗證與帳號管理器 (AuthManager) ====================
+window.AuthManager = {
+  currentUser: null,
+  mode: 'login', // 'login' | 'register'
+
+  init() {
+    this.checkSession();
+    this.bindEvents();
+  },
+
+  getUsers() {
+    try {
+      return JSON.parse(localStorage.getItem('pobi_users') || '[]');
+    } catch {
+      return [];
+    }
+  },
+
+  saveUsers(users) {
+    localStorage.setItem('pobi_users', JSON.stringify(users));
+  },
+
+  checkSession() {
+    const saved = localStorage.getItem('pobi_session') || sessionStorage.getItem('pobi_session');
+    if (saved) {
+      try {
+        this.currentUser = JSON.parse(saved);
+        this.unlockApp();
+        return;
+      } catch {}
+    }
+    this.lockApp();
+  },
+
+  lockApp() {
+    const overlay = $('#authOverlay');
+    if (overlay) overlay.classList.remove('hidden');
+    const nameEl = $('#headerUserName');
+    const avatarEl = $('#headerUserAvatar');
+    const signoutBtn = $('#btnSignOut');
+    if (nameEl) nameEl.textContent = '未登入';
+    if (avatarEl) avatarEl.textContent = '?';
+    if (signoutBtn) signoutBtn.style.display = 'none';
+  },
+
+  unlockApp() {
+    const overlay = $('#authOverlay');
+    if (overlay) overlay.classList.add('hidden');
+    const name = this.currentUser?.username || '訪客';
+    const nameEl = $('#headerUserName');
+    const avatarEl = $('#headerUserAvatar');
+    const signoutBtn = $('#btnSignOut');
+    if (nameEl) nameEl.textContent = name;
+    if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+    if (signoutBtn) signoutBtn.style.display = 'block';
+  },
+
+  bindEvents() {
+    const tabLogin = $('#tabAuthLogin');
+    const tabReg = $('#tabAuthRegister');
+    const confirmRow = $('#authConfirmPwdRow');
+    const submitBtn = $('#btnAuthSubmit');
+
+    if (tabLogin) {
+      tabLogin.onclick = () => {
+        this.mode = 'login';
+        tabLogin.classList.add('active');
+        tabReg.classList.remove('active');
+        if (confirmRow) confirmRow.style.display = 'none';
+        if (submitBtn) submitBtn.textContent = '登入進入工作站';
+        this.clearAlert();
+      };
+    }
+
+    if (tabReg) {
+      tabReg.onclick = () => {
+        this.mode = 'register';
+        tabReg.classList.add('active');
+        tabLogin.classList.remove('active');
+        if (confirmRow) confirmRow.style.display = 'flex';
+        if (submitBtn) submitBtn.textContent = '註冊並進入工作站';
+        this.clearAlert();
+      };
+    }
+
+    const togglePwd = $('#btnToggleAuthPwd');
+    if (togglePwd) {
+      togglePwd.onclick = () => {
+        const pwd = $('#authPassword');
+        if (pwd.type === 'password') {
+          pwd.type = 'text';
+          togglePwd.textContent = '隱藏';
+        } else {
+          pwd.type = 'password';
+          togglePwd.textContent = '顯示';
+        }
+      };
+    }
+
+    const form = $('#authForm');
+    if (form) {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        this.handleSubmit();
+      };
+    }
+
+    const btnGuest = $('#btnAuthGuest');
+    if (btnGuest) {
+      btnGuest.onclick = () => this.guestLogin();
+    }
+
+    const btnSignOut = $('#btnSignOut');
+    if (btnSignOut) {
+      btnSignOut.onclick = () => this.logout();
+    }
+
+    const userBtn = $('#headerUserBtn');
+    if (userBtn) {
+      userBtn.onclick = () => $('#apiModal').classList.add('active');
+    }
+  },
+
+  showAlert(msg, type = 'error') {
+    const box = $('#authAlert');
+    if (!box) return;
+    box.className = `auth-alert ${type}`;
+    box.textContent = msg;
+  },
+
+  clearAlert() {
+    const box = $('#authAlert');
+    if (!box) return;
+    box.className = 'auth-alert';
+    box.textContent = '';
+  },
+
+  handleSubmit() {
+    const u = $('#authUsername')?.value.trim();
+    const p = $('#authPassword')?.value;
+    const remember = $('#authRemember')?.checked;
+
+    if (!u) {
+      this.showAlert('請輸入帳號或電子郵件');
+      return;
+    }
+    if (!p || p.length < 4) {
+      this.showAlert('密碼長度至少需 4 個字元');
+      return;
+    }
+
+    const users = this.getUsers();
+
+    if (this.mode === 'register') {
+      const cp = $('#authConfirmPassword')?.value;
+      if (p !== cp) {
+        this.showAlert('兩次輸入的密碼不一致');
+        return;
+      }
+      if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
+        this.showAlert('此帳號名稱已被註冊，請直接登入或更換帳號');
+        return;
+      }
+
+      const newUser = { id: uid(), username: u, password: p, createdAt: new Date().toISOString() };
+      users.push(newUser);
+      this.saveUsers(users);
+
+      this.currentUser = { id: newUser.id, username: newUser.username };
+      const storage = remember ? localStorage : sessionStorage;
+      storage.setItem('pobi_session', JSON.stringify(this.currentUser));
+
+      this.showAlert('註冊成功，歡迎使用 Pobi Media！', 'success');
+      setTimeout(() => {
+        this.unlockApp();
+        showToast('註冊成功，歡迎進入 Pobi Media 專業工作站！', 'success');
+      }, 400);
+    } else {
+      let user = users.find(x => x.username.toLowerCase() === u.toLowerCase());
+      if (user) {
+        if (user.password !== p) {
+          this.showAlert('密碼錯誤，請重新確認');
+          return;
+        }
+      } else {
+        user = { id: uid(), username: u, password: p, createdAt: new Date().toISOString() };
+        users.push(user);
+        this.saveUsers(users);
+      }
+
+      this.currentUser = { id: user.id, username: user.username };
+      const storage = remember ? localStorage : sessionStorage;
+      storage.setItem('pobi_session', JSON.stringify(this.currentUser));
+
+      this.showAlert('登入成功，正在為您載入工作台...', 'success');
+      setTimeout(() => {
+        this.unlockApp();
+        showToast(`歡迎回來，${user.username}！`, 'success');
+      }, 350);
+    }
+  },
+
+  guestLogin() {
+    this.currentUser = { id: 'guest-' + uid().slice(0, 6), username: '訪客體驗' };
+    sessionStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
+    this.unlockApp();
+    showToast('已以訪客身份進入 Pobi Media 工作站', 'info');
+  },
+
+  logout() {
+    localStorage.removeItem('pobi_session');
+    sessionStorage.removeItem('pobi_session');
+    this.currentUser = null;
+    this.lockApp();
+    showToast('已安全登出', 'info');
+  }
+};
+
 // ==================== API Key 與配額管理器 ====================
 window.ApiManager = {
   userKey: localStorage.getItem('user_gemini_api_key') || '',
@@ -1099,14 +2045,14 @@ window.ApiManager = {
       }
       this.userKey = k;
       localStorage.setItem('user_gemini_api_key', k);
-      showToast('自備 API Key 儲存成功！已解鎖無限 AI 呼叫', 'success');
+      showToast('自備 API Key 儲存成功，已啟用無限制模式', 'success');
       this.updateBadge();
     };
     $('#btnClearApiKey').onclick = () => {
       this.userKey = '';
       localStorage.removeItem('user_gemini_api_key');
       $('#inputUserApiKey').value = '';
-      showToast('已清除自備 API Key，改回公用模式', 'info');
+      showToast('已清除自備金鑰，切換為公用配額模式', 'info');
       this.updateBadge();
     };
     $('#btnToggleKeyVisibility').onclick = () => {
@@ -1129,29 +2075,29 @@ window.ApiManager = {
       const res = await fetch('/api/status');
       if (res.ok) {
         this.serverStatus = await res.json();
-        $('#srvKeyStatus').textContent = this.serverStatus.hasPublicApi ? '🟢 已配置可用' : '⚪ 未配置 (需自備 Key)';
+        $('#srvKeyStatus').textContent = this.serverStatus.hasPublicApi ? '已啟用 (伺服器就緒)' : '未設定 (需使用個人金鑰)';
         $('#srvQuotaLeft').textContent = this.serverStatus.remainingToday;
       }
     } catch (e) {
-      $('#srvKeyStatus').textContent = '⚪ 離線模式';
+      $('#srvKeyStatus').textContent = '離線模式';
     }
     this.updateBadge();
   },
 
   updateBadge() {
     const b = $('#quotaText');
+    const dot = $('#quotaDot');
+    if (!b || !dot) return;
+
     if (this.userKey) {
-      b.textContent = '專屬 API 🟢';
-      b.parentElement.style.borderColor = '#3b82f6';
-      b.parentElement.style.color = '#93c5fd';
+      b.textContent = '專屬金鑰已啟用';
+      dot.className = 'status-dot blue';
     } else if (this.serverStatus.hasPublicApi) {
-      b.textContent = `公用額度: ${this.serverStatus.remainingToday} 次`;
-      b.parentElement.style.borderColor = '#047857';
-      b.parentElement.style.color = '#34d399';
+      b.textContent = `公用剩餘: ${this.serverStatus.remainingToday} 次`;
+      dot.className = 'status-dot green';
     } else {
-      b.textContent = '需自備 Key 🔑';
-      b.parentElement.style.borderColor = '#f59e0b';
-      b.parentElement.style.color = '#fbbf24';
+      b.textContent = '需設定金鑰';
+      dot.className = 'status-dot yellow';
     }
   },
 
@@ -1174,7 +2120,7 @@ window.ApiManager = {
       });
       if (!res.ok) {
         const err = await res.text();
-        throw new Error(`Gemini 官方 API 回傳錯誤 (${res.status}): ${err}`);
+        throw new Error(`Gemini API 回傳錯誤 (${res.status}): ${err}`);
       }
       const data = await res.json();
       return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -1188,7 +2134,7 @@ window.ApiManager = {
 
     if (res.status === 429) {
       this.checkServerStatus();
-      throw new Error('您今日的公用配額 (5次) 已用完。請點擊右上角「⚙️ API 設定」貼上免費申請的專屬 Key！');
+      throw new Error('今日公用免費配額 (5次) 已用完，請在右上角「API 設定」輸入您的個人金鑰');
     }
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: res.statusText }));
@@ -1224,7 +2170,7 @@ function switchTab(tabId) {
   if (btn) btn.click();
 }
 
-// ==================== 模組 1: 📐 梯形透視校正邏輯 ====================
+// ==================== 模組 1: 透視校正邏輯 ====================
 window.TrapezoidModule = {
   items: [],
   active: -1,
@@ -1324,7 +2270,7 @@ window.TrapezoidModule = {
           <div class="name">${esc(it.file.name)}</div>
           <div class="desc">${it.img.naturalWidth} × ${it.img.naturalHeight}</div>
         </div>
-        <button class="btn-remove" title="移除">×</button>
+        <button class="btn-remove" title="移除"><svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       `;
       div.onclick = () => { this.active = i; this.render(); };
       div.querySelector('.btn-remove').onclick = e => {
@@ -1353,8 +2299,8 @@ window.TrapezoidModule = {
     const it = this.items[this.active];
     if (!it) return;
     const stage = $('#trapStageArea');
-    const maxW = Math.max(100, stage.clientWidth - 40);
-    const maxH = Math.max(100, stage.clientHeight - 40);
+    const maxW = Math.max(100, stage.clientWidth - 32);
+    const maxH = Math.max(100, stage.clientHeight - 32);
     const scale = Math.min(maxW / it.img.naturalWidth, maxH / it.img.naturalHeight, 1);
     const w = Math.round(it.img.naturalWidth * scale);
     const h = Math.round(it.img.naturalHeight * scale);
@@ -1382,22 +2328,22 @@ window.TrapezoidModule = {
     ctx.beginPath();
     pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
     ctx.closePath();
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+    ctx.fillStyle = 'rgba(37, 99, 235, 0.2)';
     ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = '#60a5fa';
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#3b82f6';
     ctx.stroke();
 
     pts.forEach((p, i) => {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
-      ctx.fillStyle = (this.drag === i) ? '#f59e0b' : '#2563eb';
+      ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
+      ctx.fillStyle = (this.drag === i) ? '#d97706' : '#2563eb';
       ctx.fill();
       ctx.lineWidth = 2;
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
 
-      ctx.font = 'bold 11px system-ui';
+      ctx.font = '600 10px system-ui';
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1415,7 +2361,7 @@ window.TrapezoidModule = {
       const sx = $('#trapPreview').width / it.img.naturalWidth;
       const sy = $('#trapPreview').height / it.img.naturalHeight;
 
-      let best = -1, minD = 30;
+      let best = -1, minD = 32;
       it.points.forEach((p, i) => {
         const d = Math.hypot(p.x * sx - x, p.y * sy - y);
         if (d < minD) { minD = d; best = i; }
@@ -1586,20 +2532,20 @@ window.TrapezoidModule = {
     a.href = URL.createObjectURL(blob);
     a.download = it.file.name.replace(/\.[^.]+$/, '') + '-校正.' + ext;
     a.click();
-    showToast('校正圖下載成功！', 'success');
+    showToast('校正影像下載成功', 'success');
   },
 
   async exportAllZip() {
     if (!this.items.length) return;
     const btn = $('#trapDownloadAllZip');
-    btn.disabled = true; btn.textContent = '打包中…';
+    btn.disabled = true; btn.textContent = '打包中...';
     try {
       const zip = new JSZip();
       const fmt = $('#trapFormat').value, q = Number($('#trapQuality').value);
       const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/png' ? 'png' : 'webp';
       for (let i = 0; i < this.items.length; i++) {
         const it = this.items[i];
-        btn.textContent = `打包 (${i+1}/${this.items.length})…`;
+        btn.textContent = `打包處理中 (${i+1}/${this.items.length})...`;
         const c = await this.getWarpedCanvas(it);
         const b = await canvasToBlob(c, fmt, q);
         zip.file(it.file.name.replace(/\.[^.]+$/, '') + '-校正.' + ext, b);
@@ -1607,13 +2553,13 @@ window.TrapezoidModule = {
       const blob = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `透視校正批次_${new Date().toISOString().slice(0,10)}.zip`;
+      a.download = `校正批次_${new Date().toISOString().slice(0,10)}.zip`;
       a.click();
-      showToast('ZIP 打包下載完成！', 'success');
+      showToast('ZIP 打包下載完成', 'success');
     } catch (e) {
       showToast('打包失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '批次下載全部 (ZIP)';
+      btn.disabled = false; btn.textContent = '批次打包下載 (ZIP)';
     }
   },
 
@@ -1627,21 +2573,21 @@ window.TrapezoidModule = {
     if (mod === 'bgremove') {
       window.BgRemoveModule.loadFile(file);
       switchTab('bgremove');
-      showToast('已傳送校正圖至「去背景」工作台', 'success');
+      showToast('已傳送校正影像至背景去除', 'success');
     } else if (mod === 'ocr') {
       window.OcrModule.loadFile(file);
       switchTab('ocr');
-      showToast('已傳送校正圖至「文字辨識」工作台', 'success');
+      showToast('已傳送校正影像至文字辨識', 'success');
     } else if (mod === 'convert') {
       window.ConvertModule.addFiles([file]);
       switchTab('convert');
-      showToast('已加入「PDF 轉檔與合成」清單', 'success');
+      showToast('已加入 PDF 轉檔與合成清單', 'success');
     }
   }
 };
 
 
-// ==================== 模組 2: 📄 格式轉檔 & PDF 合成器 ====================
+// ==================== 模組 2: 格式轉檔 & PDF 合成器 ====================
 window.ConvertModule = {
   files: [],
 
@@ -1676,12 +2622,11 @@ window.ConvertModule = {
       const div = document.createElement('div');
       div.className = 'file-item';
       div.innerHTML = `
-        <div style="font-size:18px">📄</div>
         <div class="meta">
           <div class="name">${esc(it.file.name)}</div>
           <div class="desc">${(it.file.size / 1024).toFixed(1)} KB</div>
         </div>
-        <button class="btn-remove" title="移除">×</button>
+        <button class="btn-remove" title="移除"><svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       `;
       div.querySelector('.btn-remove').onclick = () => {
         this.files.splice(i, 1);
@@ -1692,9 +2637,9 @@ window.ConvertModule = {
   },
 
   async buildPdf() {
-    if (!this.files.length) { showToast('請先上傳圖片或檔案', 'warning'); return; }
+    if (!this.files.length) { showToast('請先上傳檔案', 'warning'); return; }
     const btn = $('#btnBuildPdf');
-    btn.disabled = true; btn.textContent = '正在合成 PDF…';
+    btn.disabled = true; btn.textContent = '合成 PDF 中...';
 
     try {
       const pdfDoc = await PDFLib.PDFDocument.create();
@@ -1703,7 +2648,7 @@ window.ConvertModule = {
 
       for (let i = 0; i < this.files.length; i++) {
         const it = this.files[i];
-        btn.textContent = `正在處理第 ${i+1}/${this.files.length} 頁…`;
+        btn.textContent = `處理第 ${i+1}/${this.files.length} 頁...`;
 
         if (it.file.type.startsWith('image/')) {
           const bytes = await it.file.arrayBuffer();
@@ -1746,20 +2691,20 @@ window.ConvertModule = {
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = $('#pdfFilename').value || 'MediaCraft_Doc.pdf';
+      a.download = $('#pdfFilename').value || 'PobiMedia_Doc.pdf';
       a.click();
-      showToast('PDF 合成下載成功！', 'success');
+      showToast('PDF 合成下載成功', 'success');
     } catch (e) {
       showToast('PDF 產生失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '✨ 立即合成並下載 PDF 文件';
+      btn.disabled = false; btn.textContent = '合成並下載 PDF 文件';
     }
   },
 
   async batchConvertImages() {
     if (!this.files.length) { showToast('請先上傳圖片', 'warning'); return; }
     const btn = $('#btnBatchConvert');
-    btn.disabled = true; btn.textContent = '正在轉檔…';
+    btn.disabled = true; btn.textContent = '轉檔中...';
     try {
       const zip = new JSZip();
       const fmt = $('#convTargetFormat').value, q = Number($('#convQuality').value);
@@ -1780,17 +2725,17 @@ window.ConvertModule = {
       a.href = URL.createObjectURL(zipBlob);
       a.download = `轉檔批次_${new Date().toISOString().slice(0,10)}.zip`;
       a.click();
-      showToast('批次轉檔 ZIP 下載完成！', 'success');
+      showToast('批次轉檔 ZIP 下載完成', 'success');
     } catch (e) {
       showToast('轉檔失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '📦 批次轉換並下載 ZIP 壓縮包';
+      btn.disabled = false; btn.textContent = '批次轉換並下載 ZIP 壓縮包';
     }
   }
 };
 
 
-// ==================== 模組 3: ✂️ PDF 頁面分割器 ====================
+// ==================== 模組 3: PDF 頁面分割器 ====================
 window.PdfSplitModule = {
   pdfDoc: null,
   pdfBytes: null,
@@ -1816,7 +2761,7 @@ window.PdfSplitModule = {
     $('#splitPrevPage').onclick = () => { if (this.currentPage > 1) { this.currentPage--; this.renderPage(); } };
     $('#splitNextPage').onclick = () => { if (this.currentPage < this.totalPages) { this.currentPage++; this.renderPage(); } };
 
-    $('#splitApplyAll').onclick = () => showToast('已將此切割線設定套用至所有頁面！', 'success');
+    $('#splitApplyAll').onclick = () => showToast('已套用切割線設定至所有頁面', 'success');
     $('#btnExportSplitPdf').onclick = () => this.exportSplitPdf();
 
     this.initCutOverlay();
@@ -1840,7 +2785,7 @@ window.PdfSplitModule = {
       $('#splitEmptyHint').style.display = 'none';
       $('#splitCanvasWrap').style.display = 'block';
       this.renderPage();
-      showToast(`成功載入 PDF，共 ${this.totalPages} 頁`, 'success');
+      showToast(`已載入 PDF 文件，共 ${this.totalPages} 頁`, 'success');
     } catch (e) {
       showToast('載入 PDF 失敗: ' + e.message, 'error');
     }
@@ -1867,9 +2812,9 @@ window.PdfSplitModule = {
     ctx.clearRect(0, 0, ovr.width, ovr.height);
 
     const dir = $('#splitDirection').value;
-    ctx.lineWidth = 3;
-    ctx.setLineDash([8, 6]);
-    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 5]);
+    ctx.strokeStyle = '#dc2626';
 
     if (dir === 'vertical') {
       const cutX = ovr.width * this.splitRatio;
@@ -1878,12 +2823,12 @@ window.PdfSplitModule = {
       ctx.stroke();
 
       ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
-      ctx.fillRect(cutX - 35, 10, 70, 22);
+      ctx.fillStyle = 'rgba(220, 38, 38, 0.9)';
+      ctx.fillRect(cutX - 25, 10, 50, 20);
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px system-ui';
+      ctx.font = '600 11px system-ui';
       ctx.textAlign = 'center';
-      ctx.fillText(`${Math.round(this.splitRatio * 100)}%`, cutX, 25);
+      ctx.fillText(`${Math.round(this.splitRatio * 100)}%`, cutX, 24);
     } else {
       const cutY = ovr.height * this.splitRatio;
       ctx.beginPath();
@@ -1891,12 +2836,12 @@ window.PdfSplitModule = {
       ctx.stroke();
 
       ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.85)';
-      ctx.fillRect(10, cutY - 11, 60, 22);
+      ctx.fillStyle = 'rgba(220, 38, 38, 0.9)';
+      ctx.fillRect(10, cutY - 10, 50, 20);
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px system-ui';
+      ctx.font = '600 11px system-ui';
       ctx.textAlign = 'center';
-      ctx.fillText(`${Math.round(this.splitRatio * 100)}%`, 40, cutY + 4);
+      ctx.fillText(`${Math.round(this.splitRatio * 100)}%`, 35, cutY + 4);
     }
   },
 
@@ -1930,7 +2875,7 @@ window.PdfSplitModule = {
   async exportSplitPdf() {
     if (!this.pdfBytes) return;
     const btn = $('#btnExportSplitPdf');
-    btn.disabled = true; btn.textContent = '正在分割生成新 PDF…';
+    btn.disabled = true; btn.textContent = '分割生成新 PDF 中...';
 
     try {
       const srcDoc = await PDFLib.PDFDocument.load(this.pdfBytes);
@@ -1940,7 +2885,7 @@ window.PdfSplitModule = {
       const total = srcDoc.getPageCount();
 
       for (let i = 0; i < total; i++) {
-        btn.textContent = `分割處理第 ${i+1}/${total} 頁…`;
+        btn.textContent = `處理第 ${i+1}/${total} 頁...`;
         const origPage = srcDoc.getPage(i);
         const { width, height } = origPage.getSize();
         const [embeddedPage] = await outDoc.embedPdf(srcDoc, [i]);
@@ -1980,17 +2925,17 @@ window.PdfSplitModule = {
       a.href = URL.createObjectURL(blob);
       a.download = `分割完成_共${outDoc.getPageCount()}頁.pdf`;
       a.click();
-      showToast(`PDF 分割成功！已生成 ${outDoc.getPageCount()} 頁新文件`, 'success');
+      showToast(`PDF 分割成功，共產生 ${outDoc.getPageCount()} 頁文件`, 'success');
     } catch (e) {
       showToast('分割匯出失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '💾 立即分割並匯出新 PDF';
+      btn.disabled = false; btn.textContent = '分割並匯出新 PDF';
     }
   }
 };
 
 
-// ==================== 模組 4: 🔍 圖片文字識別 (OCR) ====================
+// ==================== 模組 4: 文字辨識 OCR ====================
 window.OcrModule = {
   currentImg: null,
   cropRect: null,
@@ -2012,7 +2957,7 @@ window.OcrModule = {
     $('#btnStartOcr').onclick = () => this.runOcr();
     $('#btnCopyOcrText').onclick = () => {
       navigator.clipboard.writeText($('#ocrResultText').value);
-      showToast('文字已複製到剪貼簿！', 'success');
+      showToast('文字已複製至剪貼簿', 'success');
     };
     $('#btnSaveOcrTxt').onclick = () => this.saveText('txt');
     $('#btnSaveOcrMd').onclick = () => this.saveText('md');
@@ -2038,8 +2983,8 @@ window.OcrModule = {
   drawCanvas() {
     if (!this.currentImg) return;
     const stage = $('#ocrStageArea');
-    const maxW = Math.max(100, stage.clientWidth - 40);
-    const maxH = Math.max(100, stage.clientHeight - 40);
+    const maxW = Math.max(100, stage.clientWidth - 32);
+    const maxH = Math.max(100, stage.clientHeight - 32);
     const scale = Math.min(maxW / this.currentImg.naturalWidth, maxH / this.currentImg.naturalHeight, 1);
     const w = Math.round(this.currentImg.naturalWidth * scale);
     const h = Math.round(this.currentImg.naturalHeight * scale);
@@ -2058,9 +3003,9 @@ window.OcrModule = {
     ctx.clearRect(0, 0, ovr.width, ovr.height);
     if (!this.cropRect) return;
 
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.25)';
+    ctx.fillStyle = 'rgba(37, 99, 235, 0.25)';
     ctx.fillRect(this.cropRect.x, this.cropRect.y, this.cropRect.w, this.cropRect.h);
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.strokeStyle = '#3b82f6';
     ctx.strokeRect(this.cropRect.x, this.cropRect.y, this.cropRect.w, this.cropRect.h);
   },
@@ -2124,7 +3069,7 @@ window.OcrModule = {
       }
 
       if (engine === 'tesseract') {
-        $('#ocrProgressLabel').textContent = '載入 Tesseract WASM 引擎…';
+        $('#ocrProgressLabel').textContent = '載入 Tesseract WASM 引擎...';
         const lang = $('#ocrLanguage').value;
         const worker = await Tesseract.createWorker(lang, 1, {
           logger: m => {
@@ -2132,16 +3077,16 @@ window.OcrModule = {
               const p = Math.round(m.progress * 100);
               $('#ocrProgressBar').style.width = p + '%';
               $('#ocrProgressVal').textContent = p + '%';
-              $('#ocrProgressLabel').textContent = '文字識別中…';
+              $('#ocrProgressLabel').textContent = '文字辨識中...';
             }
           }
         });
         const ret = await worker.recognize(c);
         await worker.terminate();
         $('#ocrResultText').value = ret.data.text;
-        showToast('Tesseract 本地辨識完成！', 'success');
+        showToast('Tesseract 本地辨識完成', 'success');
       } else {
-        $('#ocrProgressLabel').textContent = 'Gemini AI 視覺深度分析中…';
+        $('#ocrProgressLabel').textContent = 'Gemini AI 視覺深度辨識中...';
         $('#ocrProgressBar').style.width = '50%';
         $('#ocrProgressVal').textContent = '50%';
 
@@ -2151,7 +3096,7 @@ window.OcrModule = {
         $('#ocrResultText').value = text;
         $('#ocrProgressBar').style.width = '100%';
         $('#ocrProgressVal').textContent = '100%';
-        showToast('Gemini AI 辨識完成！', 'success');
+        showToast('Gemini AI 辨識完成', 'success');
       }
     } catch (e) {
       showToast('OCR 辨識失敗: ' + e.message, 'error');
@@ -2169,12 +3114,12 @@ window.OcrModule = {
     a.href = URL.createObjectURL(blob);
     a.download = `OCR_提取結果_${new Date().toISOString().slice(0,10)}.${ext}`;
     a.click();
-    showToast(`已下載 .${ext} 檔案！`, 'success');
+    showToast(`已下載 .${ext} 檔案`, 'success');
   }
 };
 
 
-// ==================== 模組 5: 🪄 智慧去背景 ====================
+// ==================== 模組 5: 背景去除 ====================
 window.BgRemoveModule = {
   currentImg: null,
   rawCanvas: null,
@@ -2244,7 +3189,7 @@ window.BgRemoveModule = {
       $('#bgCanvasWrap').style.display = 'block';
 
       this.updateDisplay();
-      showToast('圖片已載入，點擊畫布背景可即時魔術棒去背！', 'success');
+      showToast('圖片已載入，點選背景可執行魔術棒去背', 'success');
     } catch (e) {
       showToast('載入圖片失敗: ' + e.message, 'error');
     }
@@ -2253,8 +3198,8 @@ window.BgRemoveModule = {
   updateDisplay() {
     if (!this.resultCanvas) return;
     const stage = $('#bgStageArea');
-    const maxW = Math.max(100, stage.clientWidth - 40);
-    const maxH = Math.max(100, stage.clientHeight - 40);
+    const maxW = Math.max(100, stage.clientWidth - 32);
+    const maxH = Math.max(100, stage.clientHeight - 32);
     const scale = Math.min(maxW / this.resultCanvas.width, maxH / this.resultCanvas.height, 1);
     const w = Math.round(this.resultCanvas.width * scale);
     const h = Math.round(this.resultCanvas.height * scale);
@@ -2289,7 +3234,7 @@ window.BgRemoveModule = {
     }
     ctx.putImageData(imgData, 0, 0);
     this.updateDisplay();
-    showToast('已一鍵清除白色背景！', 'success');
+    showToast('已清除純白色背景', 'success');
   },
 
   initMagicWandClick() {
@@ -2347,12 +3292,13 @@ window.BgRemoveModule = {
 
     ctx.putImageData(imgData, 0, 0);
     this.updateDisplay();
-    showToast('魔術棒去背完成！', 'success');
+    showToast('魔術棒去背完成', 'success');
   },
 
   setBrush(mode) {
     this.brushMode = this.brushMode === mode ? 'none' : mode;
-    showToast(`筆刷模式: ${this.brushMode === 'erase' ? '🧹 擦除' : this.brushMode === 'restore' ? '🖌️ 保留' : '點選'}`, 'info');
+    const modeLabel = this.brushMode === 'erase' ? '擦除模式' : this.brushMode === 'restore' ? '保留模式' : '點選模式';
+    showToast('筆刷切換：' + modeLabel, 'info');
   },
 
   paintBrush(x, y) {
@@ -2382,18 +3328,18 @@ window.BgRemoveModule = {
     }
 
     const btn = $('#btnRunBgRemove');
-    btn.disabled = true; btn.textContent = '🤖 Gemini AI 去背分析中…';
+    btn.disabled = true; btn.textContent = 'AI 去背分析中...';
 
     try {
       const b64 = this.rawCanvas.toDataURL('image/png').split(',')[1];
       const prompt = '請精準分析圖片主體的外形輪廓與邊界。請去除背景。';
-      showToast('正在透過 Gemini 深度模型智慧分離前後景…', 'info');
+      showToast('正在透過 Gemini 深度模型智慧分離前後景...', 'info');
       this.magicWandFloodFill(0, 0);
-      showToast('AI 去背處理完成！', 'success');
+      showToast('AI 去背處理完成', 'success');
     } catch (e) {
       showToast('AI 去背失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '✨ 執行智慧去背';
+      btn.disabled = false; btn.textContent = '執行去背處理';
     }
   },
 
@@ -2416,7 +3362,7 @@ window.BgRemoveModule = {
     a.href = URL.createObjectURL(blob);
     a.download = `去背結果_${new Date().toISOString().slice(0,10)}.${type}`;
     a.click();
-    showToast(`${type.toUpperCase()} 下載成功！`, 'success');
+    showToast(type.toUpperCase() + ' 檔案下載成功', 'success');
   },
 
   async sendToModule(mod) {
@@ -2427,16 +3373,17 @@ window.BgRemoveModule = {
     if (mod === 'ocr') {
       window.OcrModule.loadFile(file);
       switchTab('ocr');
-      showToast('已傳送去背圖至「文字識別」', 'success');
+      showToast('已傳送去背影像至文字辨識', 'success');
     } else if (mod === 'convert') {
       window.ConvertModule.addFiles([file]);
       switchTab('convert');
-      showToast('已加入「PDF 轉檔與合成」清單', 'success');
+      showToast('已加入 PDF 轉檔與合成清單', 'success');
     }
   }
 };
 
 window.addEventListener('DOMContentLoaded', () => {
+  window.AuthManager.init();
   window.ApiManager.init();
   window.TrapezoidModule.init();
   window.ConvertModule.init();
@@ -2448,3 +3395,4 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+

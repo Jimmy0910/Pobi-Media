@@ -1,8 +1,8 @@
 {
-  "name": "cloudflare-media-pdf-toolkit",
+  "name": "pobi-media",
   "version": "1.1.0",
   "private": true,
-  "description": "All-in-one Media & PDF toolkit powered by Cloudflare Workers & Gemini AI",
+  "description": "Pobi Media - All-in-one Media & PDF Studio powered by Cloudflare Workers & Gemini AI",
   "scripts": {
     "build": "node tools/build.js",
     "dev": "wrangler dev",
