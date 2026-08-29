@@ -41,13 +41,25 @@ window.AuthManager = {
   mode: 'login', // 'login' | 'register'
 
   init() {
+    this.getUsers(); // ensure admin exists
     this.checkSession();
     this.bindEvents();
   },
 
   getUsers() {
     try {
-      return JSON.parse(localStorage.getItem('pobi_users') || '[]');
+      let users = JSON.parse(localStorage.getItem('pobi_users') || '[]');
+      if (!users.some(u => u.username.toLowerCase() === 'admin')) {
+        users.unshift({
+          id: 'admin-root',
+          username: 'admin',
+          password: 'admin888',
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        });
+        localStorage.setItem('pobi_users', JSON.stringify(users));
+      }
+      return users;
     } catch {
       return [];
     }
@@ -75,9 +87,11 @@ window.AuthManager = {
     const nameEl = $('#headerUserName');
     const avatarEl = $('#headerUserAvatar');
     const signoutBtn = $('#btnSignOut');
+    const adminBtn = $('#btnOpenAdminModal');
     if (nameEl) nameEl.textContent = '未登入';
     if (avatarEl) avatarEl.textContent = '?';
     if (signoutBtn) signoutBtn.style.display = 'none';
+    if (adminBtn) adminBtn.style.display = 'none';
   },
 
   unlockApp() {
@@ -87,9 +101,17 @@ window.AuthManager = {
     const nameEl = $('#headerUserName');
     const avatarEl = $('#headerUserAvatar');
     const signoutBtn = $('#btnSignOut');
+    const adminBtn = $('#btnOpenAdminModal');
     if (nameEl) nameEl.textContent = name;
     if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
     if (signoutBtn) signoutBtn.style.display = 'block';
+
+    // 若為管理員角色，顯示管理後台按鈕
+    if (this.currentUser?.role === 'admin') {
+      if (adminBtn) adminBtn.style.display = 'inline-flex';
+    } else {
+      if (adminBtn) adminBtn.style.display = 'none';
+    }
   },
 
   bindEvents() {
@@ -199,11 +221,12 @@ window.AuthManager = {
         return;
       }
 
-      const newUser = { id: uid(), username: u, password: p, createdAt: new Date().toISOString() };
+      const role = u.toLowerCase() === 'admin' ? 'admin' : 'user';
+      const newUser = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
       users.push(newUser);
       this.saveUsers(users);
 
-      this.currentUser = { id: newUser.id, username: newUser.username };
+      this.currentUser = { id: newUser.id, username: newUser.username, role: newUser.role };
       const storage = remember ? localStorage : sessionStorage;
       storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
@@ -211,6 +234,7 @@ window.AuthManager = {
       setTimeout(() => {
         this.unlockApp();
         showToast('註冊成功，歡迎進入 Pobi Media 專業工作站！', 'success');
+        if (window.AdminManager) window.AdminManager.renderUsers();
       }, 400);
     } else {
       let user = users.find(x => x.username.toLowerCase() === u.toLowerCase());
@@ -220,12 +244,13 @@ window.AuthManager = {
           return;
         }
       } else {
-        user = { id: uid(), username: u, password: p, createdAt: new Date().toISOString() };
+        const role = u.toLowerCase() === 'admin' ? 'admin' : 'user';
+        user = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
         users.push(user);
         this.saveUsers(users);
       }
 
-      this.currentUser = { id: user.id, username: user.username };
+      this.currentUser = { id: user.id, username: user.username, role: user.role || 'user' };
       const storage = remember ? localStorage : sessionStorage;
       storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
@@ -238,7 +263,7 @@ window.AuthManager = {
   },
 
   guestLogin() {
-    this.currentUser = { id: 'guest-' + uid().slice(0, 6), username: '訪客體驗' };
+    this.currentUser = { id: 'guest-' + uid().slice(0, 6), username: '訪客體驗', role: 'guest' };
     sessionStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
     this.unlockApp();
     showToast('已以訪客身份進入 Pobi Media 工作站', 'info');
@@ -252,6 +277,274 @@ window.AuthManager = {
     showToast('已安全登出', 'info');
   }
 };
+
+// ==================== 使用者意見回饋管理器 (FeedbackManager) ====================
+window.FeedbackManager = {
+  init() {
+    $('#btnOpenFeedbackModal').onclick = () => $('#feedbackModal').classList.add('active');
+    $('#btnCloseFeedbackModal').onclick = () => $('#feedbackModal').classList.remove('active');
+
+    $('#feedbackForm').onsubmit = (e) => {
+      e.preventDefault();
+      this.submitFeedback();
+    };
+  },
+
+  getFeedback() {
+    try {
+      return JSON.parse(localStorage.getItem('pobi_feedback') || '[]');
+    } catch {
+      return [];
+    }
+  },
+
+  saveFeedback(list) {
+    localStorage.setItem('pobi_feedback', JSON.stringify(list));
+  },
+
+  submitFeedback() {
+    const type = $('#feedbackType').value;
+    const title = $('#feedbackTitle').value.trim();
+    const desc = $('#feedbackDesc').value.trim();
+    const contact = $('#feedbackContact').value.trim();
+    const username = window.AuthManager?.currentUser?.username || '匿名使用者';
+
+    if (!title || !desc) {
+      showToast('請填寫主旨與詳細描述', 'warning');
+      return;
+    }
+
+    const item = {
+      id: uid(),
+      type,
+      title,
+      desc,
+      contact,
+      username,
+      createdAt: new Date().toISOString()
+    };
+
+    const list = this.getFeedback();
+    list.unshift(item);
+    this.saveFeedback(list);
+
+    $('#feedbackTitle').value = '';
+    $('#feedbackDesc').value = '';
+    $('#feedbackContact').value = '';
+    $('#feedbackModal').classList.remove('active');
+    showToast('回饋已送出，感謝您寶貴的建議！', 'success');
+
+    if (window.AdminManager) window.AdminManager.renderFeedback();
+  }
+};
+
+// ==================== 管理者後台管理器 (AdminManager) ====================
+window.AdminManager = {
+  init() {
+    $('#btnOpenAdminModal').onclick = () => {
+      if (window.AuthManager?.currentUser?.role !== 'admin') {
+        showToast('您無權限存取管理控制台', 'error');
+        return;
+      }
+      this.renderUsers();
+      this.renderFeedback();
+      this.loadPublicApiConfig();
+      $('#adminModal').classList.add('active');
+    };
+
+    $('#btnCloseAdminModal').onclick = () => $('#adminModal').classList.remove('active');
+    $('#btnCloseAdminModal2').onclick = () => $('#adminModal').classList.remove('active');
+
+    // 頁籤切換
+    $$('.admin-tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        $$('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+        $$('.admin-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const target = $('#pane-admin-' + btn.dataset.adminPane);
+        if (target) target.classList.add('active');
+      };
+    });
+
+    // 搜尋使用者
+    $('#adminUserSearch').oninput = (e) => {
+      this.renderUsers(e.target.value.trim().toLowerCase());
+    };
+
+    // 清空回饋
+    $('#adminClearAllFeedback').onclick = () => {
+      if (confirm('確定要清除所有使用者回饋記錄嗎？')) {
+        localStorage.removeItem('pobi_feedback');
+        this.renderFeedback();
+        showToast('已清空所有回饋記錄', 'info');
+      }
+    };
+
+    // 公用 API 更新
+    $('#btnAdminSavePublicApi').onclick = () => {
+      const key = $('#adminPublicApiKey').value.trim();
+      if (!key) {
+        localStorage.removeItem('pobi_public_api_override');
+        showToast('已清除本機公用金鑰覆寫，使用 Cloudflare Worker 預設 Secrets', 'info');
+      } else {
+        localStorage.setItem('pobi_public_api_override', key);
+        showToast('公用 API 金鑰設定已更新', 'success');
+      }
+      window.ApiManager.checkServerStatus();
+    };
+
+    // 測試 API 連線
+    $('#btnAdminTestApi').onclick = () => this.testApiConnection();
+  },
+
+  loadPublicApiConfig() {
+    const key = localStorage.getItem('pobi_public_api_override') || '';
+    $('#adminPublicApiKey').value = key;
+  },
+
+  async testApiConnection() {
+    const resBox = $('#adminApiTestResult');
+    resBox.style.display = 'block';
+    resBox.textContent = '正在測試 Google Gemini 2.5 Flash 端點回應...';
+
+    const t0 = performance.now();
+    try {
+      const overrideKey = localStorage.getItem('pobi_public_api_override');
+      let statusOk = false;
+      if (overrideKey) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash?key=${overrideKey}`;
+        const res = await fetch(url);
+        statusOk = res.ok;
+      } else {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        statusOk = data.hasPublicApi;
+      }
+      const lat = Math.round(performance.now() - t0);
+      if (statusOk) {
+        resBox.textContent = `連線正常 (延遲: ${lat}ms) - Google Gemini 端點運作良好`;
+        resBox.style.color = '#34d399';
+      } else {
+        resBox.textContent = `伺服器未配置公用金鑰 (延遲: ${lat}ms) - 建議在 Cloudflare Workers 設定 GEMINI_API_KEY Secret`;
+        resBox.style.color = '#fbbf24';
+      }
+    } catch (e) {
+      resBox.textContent = '連線失敗: ' + e.message;
+      resBox.style.color = '#f87171';
+    }
+  },
+
+  renderUsers(filter = '') {
+    const users = window.AuthManager.getUsers();
+    const tbody = $('#adminUserTableBody');
+    const filtered = filter ? users.filter(u => u.username.toLowerCase().includes(filter)) : users;
+
+    $('#adminUserCount').textContent = users.length;
+    tbody.innerHTML = '';
+
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:18px">無符合的使用者帳號</td></tr>';
+      return;
+    }
+
+    filtered.forEach(u => {
+      const tr = document.createElement('tr');
+      const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '未知';
+      const roleLabel = u.role === 'admin' ? '管理員' : '一般使用者';
+      const roleClass = u.role === 'admin' ? 'admin' : 'user';
+
+      tr.innerHTML = `
+        <td><strong>${esc(u.username)}</strong></td>
+        <td><span class="admin-role-badge ${roleClass}">${roleLabel}</span></td>
+        <td>${dateStr}</td>
+        <td style="text-align:right">
+          <button class="btn-reset-pwd" style="padding:3px 8px;font-size:11px;margin-right:6px">重設密碼</button>
+          <button class="btn-del-user btn-danger" style="padding:3px 8px;font-size:11px">刪除</button>
+        </td>
+      `;
+
+      // 協助重設密碼
+      tr.querySelector('.btn-reset-pwd').onclick = () => {
+        const newPwd = prompt(`請輸入為帳號「${u.username}」設定的新密碼：`, '123456');
+        if (newPwd !== null) {
+          if (newPwd.length < 4) {
+            alert('密碼長度需至少 4 個字元');
+            return;
+          }
+          const all = window.AuthManager.getUsers();
+          const target = all.find(x => x.id === u.id);
+          if (target) {
+            target.password = newPwd;
+            window.AuthManager.saveUsers(all);
+            showToast(`已成功為「${u.username}」更新密碼`, 'success');
+          }
+        }
+      };
+
+      // 刪除使用者
+      tr.querySelector('.btn-del-user').onclick = () => {
+        if (u.username.toLowerCase() === 'admin') {
+          alert('無法刪除系統預設管理者帳號');
+          return;
+        }
+        if (confirm(`確定要永久刪除使用者「${u.username}」嗎？`)) {
+          let all = window.AuthManager.getUsers();
+          all = all.filter(x => x.id !== u.id);
+          window.AuthManager.saveUsers(all);
+          this.renderUsers($('#adminUserSearch').value.trim().toLowerCase());
+          showToast(`已刪除使用者「${u.username}」`, 'info');
+        }
+      };
+
+      tbody.appendChild(tr);
+    });
+  },
+
+  renderFeedback() {
+    const list = window.FeedbackManager.getFeedback();
+    const container = $('#adminFeedbackList');
+    $('#adminFeedbackCount').textContent = list.length;
+    container.innerHTML = '';
+
+    if (!list.length) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:24px;font-size:12px">目前無任何使用者回饋或問題回報</div>';
+      return;
+    }
+
+    list.forEach((item, idx) => {
+      const card = document.createElement('div');
+      card.className = 'feedback-item';
+      const typeLabel = item.type === 'bug' ? '問題回報' : item.type === 'feature' ? '功能建議' : '操作諮詢';
+      const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleString() : '';
+
+      card.innerHTML = `
+        <div class="feedback-header">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="feedback-type-badge ${item.type}">${typeLabel}</span>
+            <strong style="color:#ffffff">${esc(item.title)}</strong>
+          </div>
+          <div>${dateStr}</div>
+        </div>
+        <div class="feedback-text">${esc(item.desc)}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-secondary);border-top:1px solid rgba(255,255,255,0.05);padding-top:6px">
+          <span>提交者：<strong>${esc(item.username)}</strong> ${item.contact ? `(聯絡：${esc(item.contact)})` : ''}</span>
+          <button class="btn-del-fb btn-danger" style="padding:2px 8px;font-size:10px">標記已處理並刪除</button>
+        </div>
+      `;
+
+      card.querySelector('.btn-del-fb').onclick = () => {
+        const all = window.FeedbackManager.getFeedback();
+        all.splice(idx, 1);
+        window.FeedbackManager.saveFeedback(all);
+        this.renderFeedback();
+        showToast('已移除該則回饋', 'info');
+      };
+
+      container.appendChild(card);
+    });
+  }
+};
+
 
 // ==================== API Key 與配額管理器 ====================
 window.ApiManager = {
@@ -1608,6 +1901,8 @@ window.BgRemoveModule = {
 
 window.addEventListener('DOMContentLoaded', () => {
   window.AuthManager.init();
+  window.FeedbackManager.init();
+  window.AdminManager.init();
   window.ApiManager.init();
   window.TrapezoidModule.init();
   window.ConvertModule.init();
