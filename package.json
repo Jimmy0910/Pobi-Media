@@ -1,9 +1,10 @@
 {
-  "name": "cloudflare-trapezoid-editor",
-  "version": "1.0.0",
+  "name": "cloudflare-media-pdf-toolkit",
+  "version": "1.1.0",
   "private": true,
-  "description": "Cloudflare Workers trapezoid perspective correction SPA",
+  "description": "All-in-one Media & PDF toolkit powered by Cloudflare Workers & Gemini AI",
   "scripts": {
+    "build": "node tools/build.js",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit"
