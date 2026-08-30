@@ -3312,47 +3312,70 @@ window.ApiManager = {
       }]
     };
 
-    if (this.userKey) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.userKey}`;
-      const res = await fetch(url, {
+    if (this.userKey && this.userKey.trim().length > 0) {
+      const cleanKey = this.userKey.trim();
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(cleanKey)}`;
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': cleanKey
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = errData.error?.message || `HTTP ${res.status}`;
+          throw new Error(`Google Gemini 官方回傳錯誤: ${errMsg}`);
+        }
+        const data = await res.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      } catch (netErr) {
+        if (netErr.message.includes('Google Gemini 官方回傳錯誤')) throw netErr;
+        throw new Error(`連線至 Google 官方伺服器失敗 (${netErr.message})。請檢查網路或 API Key 是否正確。`);
+      }
+    }
+
+    if (window.location.protocol === 'file:' || !this.serverStatus.hasPublicApi) {
+      $('#apiModal')?.classList.add('active');
+      throw new Error('尚未設定 Gemini API Key。請在彈出的視窗中貼上您的 Google Gemini API Key（支援新版 AQ. 前綴），或切換至「Tesseract 離線引擎」進行免費辨識！');
+    }
+
+    try {
+      const res = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ ...payload, model: 'gemini-1.5-flash' })
       });
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`Gemini API 回傳錯誤 (${res.status}): ${err}`);
+
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
+        $('#apiModal')?.classList.add('active');
+        throw new Error('伺服器尚未配置公用金鑰。請在設定中輸入您的個人 Gemini API Key，或直接使用「Tesseract 本機離線 OCR」！');
       }
+
+      if (res.status === 429) {
+        this.checkServerStatus();
+        throw new Error('今日公用免費配額已用完，請在右上角「AI 設定」輸入您的個人金鑰');
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(err.message || 'AI 伺服器處理失敗');
+      }
+
       const data = await res.json();
+      if (data._quota) {
+        this.serverStatus.remainingToday = data._quota.remaining;
+        this.updateBadge();
+      }
       return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } catch (e) {
+      if (e.message.includes('尚未設定') || e.message.includes('公用免費配額') || e.message.includes('伺服器尚未配置')) {
+        throw e;
+      }
+      throw new Error('無法連線至 AI 代理伺服器。建議點選右上角輸入自備 Gemini API Key 直接連線 Google 官方！');
     }
-
-    const res = await fetch('/api/gemini', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...payload, model: 'gemini-1.5-flash' })
-    });
-
-    const ct = res.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) {
-      throw new Error('伺服器尚未啟用後端 API 代理。請點擊右上角「AI 設定」輸入您的個人 Google Gemini API Key，或使用免金鑰的「Tesseract 本機離線引擎」！');
-    }
-
-    if (res.status === 429) {
-      this.checkServerStatus();
-      throw new Error('今日公用免費配額已用完，請在右上角「AI 設定」輸入您的個人金鑰');
-    }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: res.statusText }));
-      throw new Error(err.message || 'AI 伺服器處理失敗');
-    }
-
-    const data = await res.json();
-    if (data._quota) {
-      this.serverStatus.remainingToday = data._quota.remaining;
-      this.updateBadge();
-    }
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   }
 };
 
