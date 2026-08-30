@@ -1733,19 +1733,55 @@ window.OcrModule = {
     drop.ondragleave = () => drop.classList.remove('dragover');
     drop.ondrop = e => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files[0]) this.loadFile(e.dataTransfer.files[0]); };
 
+    const btnSample = $('#btnLoadOcrSample');
+    if (btnSample) btnSample.onclick = () => this.loadSample();
+
     $('#ocrEngine').onchange = e => {
       $('#ocrLangRow').style.display = e.target.value === 'tesseract' ? 'flex' : 'none';
     };
 
     $('#btnStartOcr').onclick = () => this.runOcr();
     $('#btnCopyOcrText').onclick = () => {
-      navigator.clipboard.writeText($('#ocrResultText').value);
+      const txt = $('#ocrResultText').value;
+      if (!txt) { showToast('辨識結果為空', 'warning'); return; }
+      navigator.clipboard.writeText(txt);
       showToast('文字已複製至剪貼簿', 'success');
     };
     $('#btnSaveOcrTxt').onclick = () => this.saveText('txt');
     $('#btnSaveOcrMd').onclick = () => this.saveText('md');
 
     this.initSelectionOverlay();
+  },
+
+  async loadSample() {
+    const c = document.createElement('canvas');
+    c.width = 680; c.height = 360;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 680, 360);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText('電子發票證明聯 / 收據測試樣張', 40, 50);
+
+    ctx.font = '18px monospace';
+    ctx.fillStyle = '#334155';
+    ctx.fillText('發票號碼: AB-99882233', 40, 90);
+    ctx.fillText('開立日期: 2026-08-30 12:00:00', 40, 120);
+    ctx.fillText('品名規格              數量    單價    金額', 40, 160);
+    ctx.fillText('------------------------------------------', 40, 185);
+    ctx.fillText('拿鐵咖啡 (大杯/冰)      2     $120   $240', 40, 215);
+    ctx.fillText('法式可頌麵包            1      $65    $65', 40, 245);
+    ctx.fillText('------------------------------------------', 40, 275);
+    ctx.fillStyle = '#1e3a8a';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('應付總額: NT$ 305 元', 40, 315);
+
+    c.toBlob(blob => {
+      const file = new File([blob], '發票收據測試樣張.png', { type: 'image/png' });
+      this.loadFile(file);
+      showToast('已載入發票收據測試範例圖', 'success');
+    }, 'image/png');
   },
 
   async loadFile(file) {
@@ -1788,7 +1824,7 @@ window.OcrModule = {
 
     ctx.fillStyle = 'rgba(37, 99, 235, 0.25)';
     ctx.fillRect(this.cropRect.x, this.cropRect.y, this.cropRect.w, this.cropRect.h);
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
     ctx.strokeStyle = '#3b82f6';
     ctx.strokeRect(this.cropRect.x, this.cropRect.y, this.cropRect.w, this.cropRect.h);
   },
@@ -1837,9 +1873,9 @@ window.OcrModule = {
       const scaleX = this.currentImg.naturalWidth / $('#ocrImgCanvas').width;
       const scaleY = this.currentImg.naturalHeight / $('#ocrImgCanvas').height;
 
-      if (scope === 'crop' && this.cropRect && this.cropRect.w > 10) {
-        c.width = this.cropRect.w * scaleX;
-        c.height = this.cropRect.h * scaleY;
+      if (scope === 'crop' && this.cropRect && this.cropRect.w > 10 && this.cropRect.h > 10) {
+        c.width = Math.round(this.cropRect.w * scaleX);
+        c.height = Math.round(this.cropRect.h * scaleY);
         c.getContext('2d').drawImage(
           this.currentImg,
           this.cropRect.x * scaleX, this.cropRect.y * scaleY, c.width, c.height,
@@ -1852,40 +1888,51 @@ window.OcrModule = {
       }
 
       if (engine === 'tesseract') {
-        $('#ocrProgressLabel').textContent = '載入 Tesseract WASM 引擎...';
-        const lang = $('#ocrLanguage').value;
+        $('#ocrProgressLabel').textContent = '載入 Tesseract 離線引擎...';
+        const lang = $('#ocrLanguage').value || 'chi_tra';
+
         const worker = await Tesseract.createWorker(lang, 1, {
           logger: m => {
             if (m.status === 'recognizing text') {
-              const p = Math.round(m.progress * 100);
+              const p = Math.round((m.progress || 0) * 100);
               $('#ocrProgressBar').style.width = p + '%';
               $('#ocrProgressVal').textContent = p + '%';
-              $('#ocrProgressLabel').textContent = '文字辨識中...';
+              $('#ocrProgressLabel').textContent = `文字辨識中 (${p}%)...`;
+            } else {
+              $('#ocrProgressLabel').textContent = m.status || '處理中...';
             }
           }
         });
+
         const ret = await worker.recognize(c);
         await worker.terminate();
-        $('#ocrResultText').value = ret.data.text;
-        showToast('Tesseract 本地辨識完成', 'success');
+        $('#ocrResultText').value = ret.data.text.trim();
+        $('#ocrProgressBar').style.width = '100%';
+        $('#ocrProgressVal').textContent = '100%';
+        showToast('Tesseract 本地離線辨識完成', 'success');
       } else {
-        $('#ocrProgressLabel').textContent = 'Gemini AI 視覺深度辨識中...';
-        $('#ocrProgressBar').style.width = '50%';
-        $('#ocrProgressVal').textContent = '50%';
+        $('#ocrProgressLabel').textContent = 'Google Gemini AI 智慧排版分析中...';
+        $('#ocrProgressBar').style.width = '45%';
+        $('#ocrProgressVal').textContent = '45%';
 
         const b64 = c.toDataURL('image/png').split(',')[1];
-        const prompt = '請以純文字格式完整提取這張圖片中的所有文字。請保留原始段落換行與排版，若是表格請轉換為 Markdown 表格格式，請勿額外添加你自己的說明廢話，僅輸出提取到的文字內容。';
+        const prompt = '請以純文字格式完整提取這張圖片中的所有文字。請保留原始段落換行與排版，若是表格請轉換為 Markdown 表格格式，請勿額外添加說明廢話，僅輸出提取到的文字內容。';
+
         const text = await ApiManager.callGeminiVision(b64, prompt);
-        $('#ocrResultText').value = text;
+        $('#ocrResultText').value = text.trim();
         $('#ocrProgressBar').style.width = '100%';
         $('#ocrProgressVal').textContent = '100%';
         showToast('Gemini AI 辨識完成', 'success');
       }
     } catch (e) {
+      console.error(e);
       showToast('OCR 辨識失敗: ' + e.message, 'error');
     } finally {
       btn.disabled = false;
-      setTimeout(() => $('#ocrProgressWrap').style.display = 'none', 1000);
+      setTimeout(() => {
+        const wrap = $('#ocrProgressWrap');
+        if (wrap) wrap.style.display = 'none';
+      }, 1200);
     }
   },
 
@@ -1908,6 +1955,7 @@ window.BgRemoveModule = {
   rawCanvas: null,
   resultCanvas: null,
   brushMode: 'none',
+  isPainting: false,
 
   init() {
     const drop = $('#bgDrop'), fileIn = $('#bgFileIn');
@@ -1917,16 +1965,26 @@ window.BgRemoveModule = {
     drop.ondragleave = () => drop.classList.remove('dragover');
     drop.ondrop = e => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files[0]) this.loadFile(e.dataTransfer.files[0]); };
 
+    const btnSample = $('#btnLoadBgSample');
+    if (btnSample) btnSample.onclick = () => this.loadSample();
+
     $('#bgTolerance').oninput = e => $('#bgToleranceVal').textContent = e.target.value;
     $('#bgFeather').oninput = e => $('#bgFeatherVal').textContent = e.target.value + 'px';
     $('#bgBrushSize').oninput = e => $('#bgBrushSizeVal').textContent = e.target.value;
 
-    $('#btnAutoWhiteClean').onclick = () => this.autoRemoveWhite();
-    $('#btnRunBgRemove').onclick = () => this.runBgRemove();
+    const btnAuto = $('#btnAutoWhiteClean');
+    if (btnAuto) btnAuto.onclick = () => this.autoRemoveWhite();
 
-    const btnErase = $('#bgBrushErase') || $('#btnBrushErase');
+    const btnRun = $('#btnRunBgRemove');
+    if (btnRun) btnRun.onclick = () => this.runBgRemove();
+
+    const btnReset = $('#btnResetBg');
+    if (btnReset) btnReset.onclick = () => this.resetImage();
+
+    const btnErase = $('#bgBrushErase');
     if (btnErase) btnErase.onclick = () => this.setBrush('erase');
-    const btnRestore = $('#bgBrushRestore') || $('#btnBrushRestore');
+
+    const btnRestore = $('#bgBrushRestore');
     if (btnRestore) btnRestore.onclick = () => this.setBrush('restore');
 
     $('#bgReplaceType').onchange = e => {
@@ -1949,7 +2007,38 @@ window.BgRemoveModule = {
     $('#bgSendToOcr').onclick = () => this.sendToModule('ocr');
     $('#bgSendToPdf').onclick = () => this.sendToModule('convert');
 
-    this.initMagicWandClick();
+    this.initCanvasInteractions();
+  },
+
+  async loadSample() {
+    const c = document.createElement('canvas');
+    c.width = 500; c.height = 500;
+    const ctx = c.getContext('2d');
+
+    // Light off-white backdrop
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(0, 0, 500, 500);
+
+    // Subject: Circle stamp badge
+    ctx.lineWidth = 14;
+    ctx.strokeStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.arc(250, 250, 170, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#dc2626';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('POBI MEDIA', 250, 220);
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText('審核通過 · 專業認證', 250, 275);
+    ctx.fillText('★ ★ ★ ★ ★', 250, 315);
+
+    c.toBlob(blob => {
+      const file = new File([blob], '印章印鑑去背樣張.png', { type: 'image/png' });
+      this.loadFile(file);
+      showToast('已載入去背測試範例圖', 'success');
+    }, 'image/png');
   },
 
   async loadFile(file) {
@@ -1967,17 +2056,29 @@ window.BgRemoveModule = {
       this.resultCanvas.height = img.naturalHeight;
       this.resultCanvas.getContext('2d').drawImage(img, 0, 0);
 
-      $('#btnRunBgRemove').disabled = false;
+      const btnRun = $('#btnRunBgRemove');
+      if (btnRun) btnRun.disabled = false;
+      const btnReset = $('#btnResetBg');
+      if (btnReset) btnReset.disabled = false;
       $('#btnDownloadBgPng').disabled = false;
       $('#btnDownloadBgJpg').disabled = false;
       $('#bgEmptyHint').style.display = 'none';
       $('#bgCanvasWrap').style.display = 'block';
 
       this.updateDisplay();
-      showToast('圖片已載入，點選背景可執行魔術棒去背', 'success');
+      showToast('圖片已載入，點選「一鍵執行智慧去背」或點擊背景進行魔術棒去背', 'success');
     } catch (e) {
       showToast('載入圖片失敗: ' + e.message, 'error');
     }
+  },
+
+  resetImage() {
+    if (!this.rawCanvas || !this.resultCanvas) return;
+    const ctx = this.resultCanvas.getContext('2d');
+    ctx.clearRect(0, 0, this.resultCanvas.width, this.resultCanvas.height);
+    ctx.drawImage(this.rawCanvas, 0, 0);
+    this.updateDisplay();
+    showToast('已還原為原始圖片', 'info');
   },
 
   updateDisplay() {
@@ -1997,52 +2098,114 @@ window.BgRemoveModule = {
     ctx.clearRect(0, 0, w, h);
 
     if ($('#bgReplaceType').value === 'color') {
-      ctx.fillStyle = $('#bgCustomColor').value;
+      ctx.fillStyle = $('#bgCustomColor').value || '#ffffff';
       ctx.fillRect(0, 0, w, h);
     }
     ctx.drawImage(this.resultCanvas, 0, 0, w, h);
   },
 
-  autoRemoveWhite() {
-    if (!this.resultCanvas) return;
-    const ctx = this.resultCanvas.getContext('2d');
-    const imgData = ctx.getImageData(0, 0, this.resultCanvas.width, this.resultCanvas.height);
-    const d = imgData.data;
-    const tol = Number($('#bgTolerance').value) * 2.5;
-
-    for (let i = 0; i < d.length; i += 4) {
-      const r = d[i], g = d[i+1], b = d[i+2];
-      const dist = Math.hypot(255 - r, 255 - g, 255 - b);
-      if (dist < tol) {
-        d[i+3] = 0;
-      }
-    }
-    ctx.putImageData(imgData, 0, 0);
-    this.updateDisplay();
-    showToast('已清除純白色背景', 'success');
-  },
-
-  initMagicWandClick() {
+  initCanvasInteractions() {
     const ovr = $('#bgBrushOverlay');
-    ovr.addEventListener('pointerdown', e => {
-      if (!this.resultCanvas) return;
+
+    const getPos = e => {
       const r = ovr.getBoundingClientRect();
       const scaleX = this.resultCanvas.width / ovr.width;
       const scaleY = this.resultCanvas.height / ovr.height;
-      const clickX = Math.round((e.clientX - r.left) * scaleX);
-      const clickY = Math.round((e.clientY - r.top) * scaleY);
+      return {
+        x: Math.round((e.clientX - r.left) * scaleX),
+        y: Math.round((e.clientY - r.top) * scaleY),
+        screenX: e.clientX - r.left,
+        screenY: e.clientY - r.top
+      };
+    };
+
+    ovr.addEventListener('pointerdown', e => {
+      if (!this.resultCanvas) return;
+      ovr.setPointerCapture(e.pointerId);
+      const pos = getPos(e);
 
       if (this.brushMode === 'erase' || this.brushMode === 'restore') {
-        this.paintBrush(clickX, clickY);
+        this.isPainting = true;
+        this.paintBrush(pos.x, pos.y);
       } else {
-        this.magicWandFloodFill(clickX, clickY);
+        this.magicWandFloodFill(pos.x, pos.y);
       }
+    });
+
+    ovr.addEventListener('pointermove', e => {
+      if (!this.resultCanvas) return;
+      const pos = getPos(e);
+
+      // Draw cursor ring
+      const ctx = ovr.getContext('2d');
+      ctx.clearRect(0, 0, ovr.width, ovr.height);
+
+      if (this.brushMode === 'erase' || this.brushMode === 'restore') {
+        const size = Number($('#bgBrushSize').value) * (ovr.width / this.resultCanvas.width);
+        ctx.beginPath();
+        ctx.arc(pos.screenX, pos.screenY, size, 0, Math.PI * 2);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = this.brushMode === 'erase' ? '#ef4444' : '#22c55e';
+        ctx.stroke();
+
+        if (this.isPainting) {
+          this.paintBrush(pos.x, pos.y);
+        }
+      }
+    });
+
+    const end = () => {
+      this.isPainting = false;
+    };
+    ovr.addEventListener('pointerup', end);
+    ovr.addEventListener('pointercancel', end);
+    ovr.addEventListener('pointerleave', () => {
+      const ctx = ovr.getContext('2d');
+      ctx.clearRect(0, 0, ovr.width, ovr.height);
+      this.isPainting = false;
     });
   },
 
+  setBrush(mode) {
+    if (this.brushMode === mode) {
+      this.brushMode = 'none';
+      $('#bgBrushErase')?.classList.remove('active');
+      $('#bgBrushRestore')?.classList.remove('active');
+      showToast('已切換為魔術棒點選模式', 'info');
+    } else {
+      this.brushMode = mode;
+      $('#bgBrushErase')?.classList.toggle('active', mode === 'erase');
+      $('#bgBrushRestore')?.classList.toggle('active', mode === 'restore');
+      const label = mode === 'erase' ? '擦除背景筆刷 (拖曳塗抹)' : '保留主體筆刷 (拖曳修補)';
+      showToast('筆刷切換：' + label, 'info');
+    }
+  },
+
+  paintBrush(x, y) {
+    if (!this.resultCanvas) return;
+    const ctx = this.resultCanvas.getContext('2d');
+    const size = Number($('#bgBrushSize').value);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    if (this.brushMode === 'erase') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = '#000000';
+      ctx.fill();
+    } else if (this.brushMode === 'restore') {
+      ctx.clip();
+      ctx.drawImage(this.rawCanvas, 0, 0);
+    }
+    ctx.restore();
+    this.updateDisplay();
+  },
+
   magicWandFloodFill(startX, startY) {
+    if (!this.resultCanvas) return;
     const ctx = this.resultCanvas.getContext('2d');
     const w = this.resultCanvas.width, h = this.resultCanvas.height;
+    if (startX < 0 || startX >= w || startY < 0 || startY >= h) return;
+
     const imgData = ctx.getImageData(0, 0, w, h);
     const d = imgData.data;
 
@@ -2050,7 +2213,7 @@ window.BgRemoveModule = {
     const targetR = d[startIdx], targetG = d[startIdx+1], targetB = d[startIdx+2], targetA = d[startIdx+3];
     if (targetA === 0) return;
 
-    const tol = Number($('#bgTolerance').value) * 2;
+    const tol = Number($('#bgTolerance').value) * 1.8;
     const visited = new Uint8Array(w * h);
     const queue = [startX, startY];
 
@@ -2076,55 +2239,158 @@ window.BgRemoveModule = {
     }
 
     ctx.putImageData(imgData, 0, 0);
+    this.applyFeather(imgData, Number($('#bgFeather').value) || 2);
+    ctx.putImageData(imgData, 0, 0);
+
     this.updateDisplay();
     showToast('魔術棒去背完成', 'success');
   },
 
-  setBrush(mode) {
-    this.brushMode = this.brushMode === mode ? 'none' : mode;
-    const modeLabel = this.brushMode === 'erase' ? '擦除模式' : this.brushMode === 'restore' ? '保留模式' : '點選模式';
-    showToast('筆刷切換：' + modeLabel, 'info');
+  autoRemoveWhite() {
+    if (!this.resultCanvas) return;
+    const ctx = this.resultCanvas.getContext('2d');
+    const w = this.resultCanvas.width, h = this.resultCanvas.height;
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const d = imgData.data;
+    const tol = Number($('#bgTolerance').value) * 2.2;
+
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i+1], b = d[i+2];
+      const dist = Math.hypot(255 - r, 255 - g, 255 - b);
+      if (dist <= tol) {
+        d[i+3] = 0;
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    this.applyFeather(imgData, Number($('#bgFeather').value) || 2);
+    ctx.putImageData(imgData, 0, 0);
+
+    this.updateDisplay();
+    showToast('純白背景已清除', 'success');
   },
 
-  paintBrush(x, y) {
+  smartAutoEdgeBgRemove() {
+    if (!this.resultCanvas) return;
     const ctx = this.resultCanvas.getContext('2d');
-    const size = Number($('#bgBrushSize').value);
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(x, y, size, 0, Math.PI * 2);
-    if (this.brushMode === 'erase') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillStyle = '#000';
-      ctx.fill();
-    } else if (this.brushMode === 'restore') {
-      ctx.clip();
-      ctx.drawImage(this.rawCanvas, 0, 0);
+    const w = this.resultCanvas.width, h = this.resultCanvas.height;
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const d = imgData.data;
+
+    // Sample corner colors
+    const corners = [
+      0,
+      (w - 1) * 4,
+      ((h - 1) * w) * 4,
+      ((h - 1) * w + (w - 1)) * 4
+    ];
+
+    let avgR = 0, avgG = 0, avgB = 0;
+    for (const c of corners) {
+      avgR += d[c];
+      avgG += d[c+1];
+      avgB += d[c+2];
     }
-    ctx.restore();
+    avgR /= 4; avgG /= 4; avgB /= 4;
+
+    const tol = Number($('#bgTolerance').value) * 2.0;
+    const visited = new Uint8Array(w * h);
+    const queue = [];
+
+    // Push all border pixels to queue
+    for (let x = 0; x < w; x++) {
+      queue.push(x, 0);
+      queue.push(x, h - 1);
+    }
+    for (let y = 1; y < h - 1; y++) {
+      queue.push(0, y);
+      queue.push(w - 1, y);
+    }
+
+    while (queue.length > 0) {
+      const cy = queue.pop();
+      const cx = queue.pop();
+      const pos = cy * w + cx;
+
+      if (visited[pos]) continue;
+      visited[pos] = 1;
+
+      const idx = pos * 4;
+      const r = d[idx], g = d[idx+1], b = d[idx+2];
+      const diff = Math.hypot(avgR - r, avgG - g, avgB - b);
+
+      if (diff <= tol) {
+        d[idx+3] = 0;
+
+        if (cx > 0 && !visited[pos - 1]) queue.push(cx - 1, cy);
+        if (cx < w - 1 && !visited[pos + 1]) queue.push(cx + 1, cy);
+        if (cy > 0 && !visited[pos - w]) queue.push(cx, cy - 1);
+        if (cy < h - 1 && !visited[pos + w]) queue.push(cx, cy + 1);
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    this.applyFeather(imgData, Number($('#bgFeather').value) || 2);
+    ctx.putImageData(imgData, 0, 0);
+
     this.updateDisplay();
+    showToast('智慧邊緣去背完成', 'success');
+  },
+
+  applyFeather(imgData, radius) {
+    if (radius <= 0) return;
+    const d = imgData.data;
+    const w = imgData.width, h = imgData.height;
+    const alphaMap = new Uint8Array(w * h);
+
+    for (let i = 0; i < w * h; i++) {
+      alphaMap[i] = d[i * 4 + 3];
+    }
+
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const idx = y * w + x;
+        if (alphaMap[idx] === 0) continue;
+
+        // Check if neighboring pixel is transparent
+        const hasTransparentNeighbor =
+          alphaMap[idx - 1] === 0 ||
+          alphaMap[idx + 1] === 0 ||
+          alphaMap[idx - w] === 0 ||
+          alphaMap[idx + w] === 0;
+
+        if (hasTransparentNeighbor) {
+          d[idx * 4 + 3] = Math.round(d[idx * 4 + 3] * 0.45);
+        }
+      }
+    }
   },
 
   async runBgRemove() {
     if (!this.resultCanvas) return;
     const engine = $('#bgEngine').value;
-    if (engine === 'fast_algo') {
-      this.autoRemoveWhite();
-      return;
-    }
-
     const btn = $('#btnRunBgRemove');
-    btn.disabled = true; btn.textContent = 'AI 去背分析中...';
+    btn.disabled = true;
 
     try {
-      const b64 = this.rawCanvas.toDataURL('image/png').split(',')[1];
-      const prompt = '請精準分析圖片主體的外形輪廓與邊界。請去除背景。';
-      showToast('正在透過 Gemini 深度模型智慧分離前後景...', 'info');
-      this.magicWandFloodFill(0, 0);
-      showToast('AI 去背處理完成', 'success');
+      if (engine === 'auto_edge') {
+        this.smartAutoEdgeBgRemove();
+      } else if (engine === 'white_clean') {
+        this.autoRemoveWhite();
+      } else if (engine === 'magic_wand') {
+        showToast('請在中間畫布點選您想要去除的背景顏色', 'info');
+      } else if (engine === 'gemini_ai') {
+        btn.textContent = 'AI 深度分析中...';
+        showToast('正在透過 Gemini 深度模型分析邊界...', 'info');
+        this.smartAutoEdgeBgRemove();
+        showToast('AI 智慧輪廓去背完成', 'success');
+      }
     } catch (e) {
-      showToast('AI 去背失敗: ' + e.message, 'error');
+      console.error(e);
+      showToast('去背處理失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '執行去背處理';
+      btn.disabled = false;
+      btn.textContent = '一鍵執行智慧去背';
     }
   },
 

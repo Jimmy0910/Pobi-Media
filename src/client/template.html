@@ -450,44 +450,45 @@
           <div class="drop-zone-desc">JPG, PNG, WebP</div>
           <input type="file" id="ocrFileIn" accept="image/*">
         </div>
+        <button id="btnLoadOcrSample" style="width:100%;font-size:11px;margin-top:6px">載入測試範例圖 (發票/單據)</button>
 
-        <div class="config-group">
-          <div class="config-group-title">辨識引擎</div>
+        <div class="config-group" style="margin-top:12px">
+          <div class="config-group-title">辨識引擎設定</div>
           <div class="config-row">
-            <label>模式</label>
+            <label>辨識引擎</label>
             <select id="ocrEngine">
-              <option value="gemini">Gemini AI 視覺 (高精準 / 排版還原)</option>
-              <option value="tesseract">Tesseract.js WASM (純本地離線)</option>
+              <option value="tesseract" selected>Tesseract.js WASM (本機離線，推薦)</option>
+              <option value="gemini">Google Gemini AI 視覺 (需 API 金鑰)</option>
             </select>
           </div>
-          <div class="config-row" id="ocrLangRow" style="display:none">
-            <label>語系</label>
+          <div class="config-row" id="ocrLangRow">
+            <label>辨識語系</label>
             <select id="ocrLanguage">
-              <option value="chi_tra+eng">繁體中文 + 英文</option>
-              <option value="chi_sim+eng">簡體中文 + 英文</option>
-              <option value="eng">純英文</option>
-              <option value="jpn+eng">日文 + 英文</option>
+              <option value="chi_tra" selected>繁體中文 + 英文</option>
+              <option value="eng">純英文 (English)</option>
+              <option value="chi_sim">簡體中文 + 英文</option>
+              <option value="jpn">日文 + 英文 (Japanese)</option>
             </select>
           </div>
           <div class="config-row">
-            <label>範圍</label>
+            <label>辨識範圍</label>
             <select id="ocrScope">
-              <option value="full">全圖辨識</option>
-              <option value="crop">畫布框選區域</option>
+              <option value="full" selected>整張圖片完整辨識</option>
+              <option value="crop">畫布框選局部區域</option>
             </select>
           </div>
         </div>
 
-        <button id="btnStartOcr" class="btn-primary" style="width:100%;padding:10px;font-size:13px" disabled>
+        <button id="btnStartOcr" class="btn-primary" style="width:100%;padding:10px;font-size:13px;margin-top:10px" disabled>
           開始文字辨識
         </button>
 
-        <div id="ocrProgressWrap" style="margin-top:8px;display:none">
+        <div id="ocrProgressWrap" style="margin-top:10px;display:none">
           <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px">
             <span id="ocrProgressLabel">處理中...</span>
             <span id="ocrProgressVal" style="font-family:var(--font-mono)">0%</span>
           </div>
-          <div style="height:4px;background:var(--bg-input);border-radius:2px;overflow:hidden">
+          <div style="height:5px;background:var(--bg-input);border-radius:3px;overflow:hidden">
             <div id="ocrProgressBar" style="height:100%;width:0%;background:var(--primary);transition:width .2s"></div>
           </div>
         </div>
@@ -498,7 +499,7 @@
         <div class="stage-toolbar">
           <span style="font-size:12px;font-weight:600;color:var(--text-primary)">影像預覽與選取</span>
           <div style="flex:1"></div>
-          <span style="font-size:11px;color:var(--text-muted)">提示：選擇「畫布框選」可在圖上拖曳選取矩形</span>
+          <span style="font-size:11px;color:var(--text-muted)">提示：選擇「畫布框選」可在圖上拖曳選取矩形進行局部辨識</span>
         </div>
         <div class="stage-canvas-area" id="ocrStageArea">
           <div id="ocrEmptyHint" style="color:var(--text-muted);font-size:12px;text-align:center">
@@ -509,7 +510,7 @@
                 <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
               </svg>
             </div>
-            請上傳圖片以開始文字辨識
+            請上傳圖片或點擊「載入測試範例圖」開始文字辨識
           </div>
           <div id="ocrCanvasWrap" style="position:relative;display:none">
             <canvas id="ocrImgCanvas"></canvas>
@@ -547,43 +548,46 @@
           <div class="drop-zone-desc">人像、物件、簽名印章</div>
           <input type="file" id="bgFileIn" accept="image/*">
         </div>
+        <button id="btnLoadBgSample" style="width:100%;font-size:11px;margin-top:6px">載入測試範例圖 (商品照/印章)</button>
 
-        <div class="config-group">
-          <div class="config-group-title">處理核心</div>
+        <div class="config-group" style="margin-top:12px">
+          <div class="config-group-title">去背模式</div>
           <div class="config-row">
-            <label>模式</label>
+            <label>處理模式</label>
             <select id="bgEngine">
-              <option value="fast_algo">極速純演算法 (魔術棒 / 印章清底)</option>
+              <option value="auto_edge" selected>智慧邊緣偵測去背 (推薦，自動辨識底色)</option>
+              <option value="white_clean">純白背景一鍵清除 (公文/簽名/印鑑)</option>
+              <option value="magic_wand">魔術棒點選清除模式</option>
               <option value="gemini_ai">Gemini AI 語意輪廓分析</option>
             </select>
           </div>
           <div id="bgAlgoSettings">
             <div class="config-row">
               <label>容差 (Tolerance)</label>
-              <input type="range" id="bgTolerance" min="1" max="100" value="32">
-              <span id="bgToleranceVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">32</span>
+              <input type="range" id="bgTolerance" min="5" max="100" value="35">
+              <span id="bgToleranceVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">35</span>
             </div>
             <div class="config-row">
               <label>邊緣羽化</label>
-              <input type="range" id="bgFeather" min="0" max="10" value="1">
-              <span id="bgFeatherVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">1px</span>
+              <input type="range" id="bgFeather" min="0" max="8" value="2">
+              <span id="bgFeatherVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">2px</span>
             </div>
-            <button id="btnAutoWhiteClean" style="width:100%;font-size:11px;margin-top:4px">
-              清除純白背景 (公文簽名/印鑑)
-            </button>
           </div>
-          <button id="btnRunBgRemove" class="btn-primary" style="width:100%;margin-top:8px;padding:8px" disabled>
-            執行去背處理
+          <button id="btnRunBgRemove" class="btn-primary" style="width:100%;margin-top:8px;padding:9px" disabled>
+            一鍵執行智慧去背
+          </button>
+          <button id="btnResetBg" style="width:100%;font-size:11px;margin-top:4px" disabled>
+            還原原始圖片
           </button>
         </div>
 
         <div class="config-group">
-          <div class="config-group-title">手動筆刷修整</div>
+          <div class="config-group-title">手動筆刷塗抹修整</div>
           <div style="display:flex;gap:6px">
             <button id="bgBrushErase" class="btn-danger" style="flex:1;font-size:11px">擦除背景</button>
             <button id="bgBrushRestore" class="btn-success" style="flex:1;font-size:11px">保留主體</button>
           </div>
-          <div class="config-row">
+          <div class="config-row" style="margin-top:6px">
             <label>筆刷大小</label>
             <input type="range" id="bgBrushSize" min="5" max="80" value="25">
             <span id="bgBrushSizeVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">25</span>
@@ -596,9 +600,9 @@
         <div class="stage-toolbar">
           <span style="font-size:12px;font-weight:600;color:var(--text-primary)">去背畫布預覽</span>
           <div style="flex:1"></div>
-          <span style="font-size:11px;color:var(--text-muted)">點選影像背景可觸發魔術棒去背</span>
+          <span style="font-size:11px;color:var(--text-muted)">提示：棋盤格代表透明區域，可直接在畫布上點選或拖曳筆刷修補</span>
         </div>
-        <div class="stage-canvas-area checkerboard" id="bgStageArea">
+        <div class="stage-canvas-area" id="bgStageArea">
           <div id="bgEmptyHint" style="color:var(--text-muted);font-size:12px;text-align:center">
             <div class="empty-state-logo">
               <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
@@ -607,9 +611,9 @@
                 <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
               </svg>
             </div>
-            請上傳圖片以開始去背處理
+            請上傳圖片或點擊「載入測試範例圖」開始去背處理
           </div>
-          <div id="bgCanvasWrap" style="position:relative;display:none">
+          <div id="bgCanvasWrap" class="canvas-checkerboard" style="position:relative;display:none">
             <canvas id="bgResultCanvas"></canvas>
             <canvas id="bgBrushOverlay" style="position:absolute;top:0;left:0;cursor:crosshair"></canvas>
           </div>
