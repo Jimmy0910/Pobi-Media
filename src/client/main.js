@@ -1,3 +1,6 @@
+(function(window, document) {
+'use strict';
+
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
@@ -41,7 +44,7 @@ window.AuthManager = {
   mode: 'login', // 'login' | 'register'
 
   init() {
-    this.getUsers(); // ensure admin exists
+    this.getUsers(); // 確保預設管理員與開發者種子帳號存在
     this.checkSession();
     this.bindEvents();
   },
@@ -49,6 +52,7 @@ window.AuthManager = {
   getUsers() {
     try {
       let users = JSON.parse(localStorage.getItem('pobi_users') || '[]');
+      let updated = false;
       if (!users.some(u => u.username.toLowerCase() === 'admin')) {
         users.unshift({
           id: 'admin-root',
@@ -57,6 +61,19 @@ window.AuthManager = {
           role: 'admin',
           createdAt: new Date().toISOString()
         });
+        updated = true;
+      }
+      if (!users.some(u => u.username.toLowerCase() === 'developer')) {
+        users.push({
+          id: 'dev-root',
+          username: 'developer',
+          password: 'dev888',
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        });
+        updated = true;
+      }
+      if (updated) {
         localStorage.setItem('pobi_users', JSON.stringify(users));
       }
       return users;
@@ -97,7 +114,7 @@ window.AuthManager = {
   unlockApp() {
     const overlay = $('#authOverlay');
     if (overlay) overlay.classList.add('hidden');
-    const name = this.currentUser?.username || '訪客';
+    const name = this.currentUser?.username || '會員';
     const nameEl = $('#headerUserName');
     const avatarEl = $('#headerUserAvatar');
     const signoutBtn = $('#btnSignOut');
@@ -119,6 +136,7 @@ window.AuthManager = {
     const tabReg = $('#tabAuthRegister');
     const confirmRow = $('#authConfirmPwdRow');
     const submitBtn = $('#btnAuthSubmit');
+    const btnDevSetup = $('#btnAuthDevSetup');
 
     if (tabLogin) {
       tabLogin.onclick = () => {
@@ -164,9 +182,8 @@ window.AuthManager = {
       };
     }
 
-    const btnGuest = $('#btnAuthGuest');
-    if (btnGuest) {
-      btnGuest.onclick = () => this.guestLogin();
+    if (btnDevSetup) {
+      btnDevSetup.onclick = () => this.setupDeveloperAccount();
     }
 
     const btnSignOut = $('#btnSignOut');
@@ -178,6 +195,32 @@ window.AuthManager = {
     if (userBtn) {
       userBtn.onclick = () => $('#apiModal').classList.add('active');
     }
+  },
+
+  setupDeveloperAccount() {
+    const users = this.getUsers();
+    let dev = users.find(u => u.username.toLowerCase() === 'developer');
+    if (!dev) {
+      dev = {
+        id: 'dev-root',
+        username: 'developer',
+        password: 'dev888',
+        role: 'admin',
+        createdAt: new Date().toISOString()
+      };
+      users.push(dev);
+      this.saveUsers(users);
+    }
+    
+    this.currentUser = { id: dev.id, username: dev.username, role: 'admin' };
+    localStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
+    
+    this.showAlert('⚡ 開發者管理員帳號 (developer) 已快速開通並自動登入！', 'success');
+    setTimeout(() => {
+      this.unlockApp();
+      showToast('⚡ 歡迎開發者 developer！具備完整多媒體與後台最高管理權限。', 'success');
+      if (window.AdminManager) window.AdminManager.renderUsers();
+    }, 350);
   },
 
   showAlert(msg, type = 'error') {
@@ -217,11 +260,11 @@ window.AuthManager = {
         return;
       }
       if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
-        this.showAlert('此帳號名稱已被註冊，請直接登入或更換帳號');
+        this.showAlert('此帳號名稱已被註冊，請切換至「會員登入」或更換名稱');
         return;
       }
 
-      const role = u.toLowerCase() === 'admin' ? 'admin' : 'user';
+      const role = (u.toLowerCase() === 'admin' || u.toLowerCase() === 'developer') ? 'admin' : 'user';
       const newUser = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
       users.push(newUser);
       this.saveUsers(users);
@@ -233,7 +276,7 @@ window.AuthManager = {
       this.showAlert('註冊成功，歡迎使用 Pobi Media！', 'success');
       setTimeout(() => {
         this.unlockApp();
-        showToast('註冊成功，歡迎進入 Pobi Media 專業工作站！', 'success');
+        showToast(`註冊成功，歡迎 ${newUser.username} 進入 Pobi Media 專業工作站！`, 'success');
         if (window.AdminManager) window.AdminManager.renderUsers();
       }, 400);
     } else {
@@ -244,10 +287,8 @@ window.AuthManager = {
           return;
         }
       } else {
-        const role = u.toLowerCase() === 'admin' ? 'admin' : 'user';
-        user = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
-        users.push(user);
-        this.saveUsers(users);
+        this.showAlert('找不到此帳號，請切換至「註冊新帳號」或點擊下方「一鍵開通開發者帳號」');
+        return;
       }
 
       this.currentUser = { id: user.id, username: user.username, role: user.role || 'user' };
@@ -260,13 +301,6 @@ window.AuthManager = {
         showToast(`歡迎回來，${user.username}！`, 'success');
       }, 350);
     }
-  },
-
-  guestLogin() {
-    this.currentUser = { id: 'guest-' + uid().slice(0, 6), username: '訪客體驗', role: 'guest' };
-    sessionStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
-    this.unlockApp();
-    showToast('已以訪客身份進入 Pobi Media 工作站', 'info');
   },
 
   logout() {
@@ -1658,8 +1692,10 @@ window.BgRemoveModule = {
     $('#btnAutoWhiteClean').onclick = () => this.autoRemoveWhite();
     $('#btnRunBgRemove').onclick = () => this.runBgRemove();
 
-    $('#btnBrushErase').onclick = () => this.setBrush('erase');
-    $('#btnBrushRestore').onclick = () => this.setBrush('restore');
+    const btnErase = $('#bgBrushErase') || $('#btnBrushErase');
+    if (btnErase) btnErase.onclick = () => this.setBrush('erase');
+    const btnRestore = $('#bgBrushRestore') || $('#btnBrushRestore');
+    if (btnRestore) btnRestore.onclick = () => this.setBrush('restore');
 
     $('#bgReplaceType').onchange = e => {
       $('#bgColorRow').style.display = e.target.value === 'color' ? 'flex' : 'none';
@@ -1899,14 +1935,22 @@ window.BgRemoveModule = {
   }
 };
 
-window.addEventListener('DOMContentLoaded', () => {
-  window.AuthManager.init();
-  window.FeedbackManager.init();
-  window.AdminManager.init();
-  window.ApiManager.init();
-  window.TrapezoidModule.init();
-  window.ConvertModule.init();
-  window.PdfSplitModule.init();
-  window.OcrModule.init();
-  window.BgRemoveModule.init();
-});
+function boot() {
+  if (window.AuthManager) window.AuthManager.init();
+  if (window.FeedbackManager) window.FeedbackManager.init();
+  if (window.AdminManager) window.AdminManager.init();
+  if (window.ApiManager) window.ApiManager.init();
+  if (window.TrapezoidModule) window.TrapezoidModule.init();
+  if (window.ConvertModule) window.ConvertModule.init();
+  if (window.PdfSplitModule) window.PdfSplitModule.init();
+  if (window.OcrModule) window.OcrModule.init();
+  if (window.BgRemoveModule) window.BgRemoveModule.init();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})(window, document);

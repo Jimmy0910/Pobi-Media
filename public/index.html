@@ -979,21 +979,27 @@ canvas {
   background: var(--border);
 }
 
-.auth-guest-btn {
-  height: 36px;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  font-size: 12px;
+.auth-dev-btn {
+  height: 38px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(37, 99, 235, 0.15) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #c084fc;
+  font-size: 12.5px;
+  font-weight: 600;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
-.auth-guest-btn:hover {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border-color: var(--border-focus);
+.auth-dev-btn:hover {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.3) 0%, rgba(37, 99, 235, 0.3) 100%);
+  border-color: #a855f7;
+  color: #f3e8ff;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.25);
 }
 
 .auth-alert {
@@ -1286,8 +1292,8 @@ canvas {
           登入進入工作站
         </button>
         <div class="auth-divider">或</div>
-        <button type="button" class="auth-guest-btn" id="btnAuthGuest">
-          以訪客身份直接體驗
+        <button type="button" class="auth-dev-btn" id="btnAuthDevSetup">
+          ⚡ 一鍵申請 / 快速開通開發者管理員帳號
         </button>
       </div>
     </form>
@@ -2095,8 +2101,11 @@ canvas {
 
 <!-- 核心業務邏輯指令碼 -->
 <script>
+(function(window, document) {
+'use strict';
+
 const $ = s => document.querySelector(s);
-const $ = s => document.querySelectorAll(s);
+const $$ = s => document.querySelectorAll(s);
 
 function showToast(msg, type = 'info') {
   const c = $('#toastContainer');
@@ -2138,7 +2147,7 @@ window.AuthManager = {
   mode: 'login', // 'login' | 'register'
 
   init() {
-    this.getUsers(); // ensure admin exists
+    this.getUsers(); // 確保預設管理員與開發者種子帳號存在
     this.checkSession();
     this.bindEvents();
   },
@@ -2146,6 +2155,7 @@ window.AuthManager = {
   getUsers() {
     try {
       let users = JSON.parse(localStorage.getItem('pobi_users') || '[]');
+      let updated = false;
       if (!users.some(u => u.username.toLowerCase() === 'admin')) {
         users.unshift({
           id: 'admin-root',
@@ -2154,6 +2164,19 @@ window.AuthManager = {
           role: 'admin',
           createdAt: new Date().toISOString()
         });
+        updated = true;
+      }
+      if (!users.some(u => u.username.toLowerCase() === 'developer')) {
+        users.push({
+          id: 'dev-root',
+          username: 'developer',
+          password: 'dev888',
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        });
+        updated = true;
+      }
+      if (updated) {
         localStorage.setItem('pobi_users', JSON.stringify(users));
       }
       return users;
@@ -2194,7 +2217,7 @@ window.AuthManager = {
   unlockApp() {
     const overlay = $('#authOverlay');
     if (overlay) overlay.classList.add('hidden');
-    const name = this.currentUser?.username || '訪客';
+    const name = this.currentUser?.username || '會員';
     const nameEl = $('#headerUserName');
     const avatarEl = $('#headerUserAvatar');
     const signoutBtn = $('#btnSignOut');
@@ -2216,6 +2239,7 @@ window.AuthManager = {
     const tabReg = $('#tabAuthRegister');
     const confirmRow = $('#authConfirmPwdRow');
     const submitBtn = $('#btnAuthSubmit');
+    const btnDevSetup = $('#btnAuthDevSetup');
 
     if (tabLogin) {
       tabLogin.onclick = () => {
@@ -2261,9 +2285,8 @@ window.AuthManager = {
       };
     }
 
-    const btnGuest = $('#btnAuthGuest');
-    if (btnGuest) {
-      btnGuest.onclick = () => this.guestLogin();
+    if (btnDevSetup) {
+      btnDevSetup.onclick = () => this.setupDeveloperAccount();
     }
 
     const btnSignOut = $('#btnSignOut');
@@ -2275,6 +2298,32 @@ window.AuthManager = {
     if (userBtn) {
       userBtn.onclick = () => $('#apiModal').classList.add('active');
     }
+  },
+
+  setupDeveloperAccount() {
+    const users = this.getUsers();
+    let dev = users.find(u => u.username.toLowerCase() === 'developer');
+    if (!dev) {
+      dev = {
+        id: 'dev-root',
+        username: 'developer',
+        password: 'dev888',
+        role: 'admin',
+        createdAt: new Date().toISOString()
+      };
+      users.push(dev);
+      this.saveUsers(users);
+    }
+    
+    this.currentUser = { id: dev.id, username: dev.username, role: 'admin' };
+    localStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
+    
+    this.showAlert('⚡ 開發者管理員帳號 (developer) 已快速開通並自動登入！', 'success');
+    setTimeout(() => {
+      this.unlockApp();
+      showToast('⚡ 歡迎開發者 developer！具備完整多媒體與後台最高管理權限。', 'success');
+      if (window.AdminManager) window.AdminManager.renderUsers();
+    }, 350);
   },
 
   showAlert(msg, type = 'error') {
@@ -2314,11 +2363,11 @@ window.AuthManager = {
         return;
       }
       if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
-        this.showAlert('此帳號名稱已被註冊，請直接登入或更換帳號');
+        this.showAlert('此帳號名稱已被註冊，請切換至「會員登入」或更換名稱');
         return;
       }
 
-      const role = u.toLowerCase() === 'admin' ? 'admin' : 'user';
+      const role = (u.toLowerCase() === 'admin' || u.toLowerCase() === 'developer') ? 'admin' : 'user';
       const newUser = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
       users.push(newUser);
       this.saveUsers(users);
@@ -2330,7 +2379,7 @@ window.AuthManager = {
       this.showAlert('註冊成功，歡迎使用 Pobi Media！', 'success');
       setTimeout(() => {
         this.unlockApp();
-        showToast('註冊成功，歡迎進入 Pobi Media 專業工作站！', 'success');
+        showToast(`註冊成功，歡迎 ${newUser.username} 進入 Pobi Media 專業工作站！`, 'success');
         if (window.AdminManager) window.AdminManager.renderUsers();
       }, 400);
     } else {
@@ -2341,10 +2390,8 @@ window.AuthManager = {
           return;
         }
       } else {
-        const role = u.toLowerCase() === 'admin' ? 'admin' : 'user';
-        user = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
-        users.push(user);
-        this.saveUsers(users);
+        this.showAlert('找不到此帳號，請切換至「註冊新帳號」或點擊下方「一鍵開通開發者帳號」');
+        return;
       }
 
       this.currentUser = { id: user.id, username: user.username, role: user.role || 'user' };
@@ -2357,13 +2404,6 @@ window.AuthManager = {
         showToast(`歡迎回來，${user.username}！`, 'success');
       }, 350);
     }
-  },
-
-  guestLogin() {
-    this.currentUser = { id: 'guest-' + uid().slice(0, 6), username: '訪客體驗', role: 'guest' };
-    sessionStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
-    this.unlockApp();
-    showToast('已以訪客身份進入 Pobi Media 工作站', 'info');
   },
 
   logout() {
@@ -2453,10 +2493,10 @@ window.AdminManager = {
     $('#btnCloseAdminModal2').onclick = () => $('#adminModal').classList.remove('active');
 
     // 頁籤切換
-    $('.admin-tab-btn').forEach(btn => {
+    $$('.admin-tab-btn').forEach(btn => {
       btn.onclick = () => {
-        $('.admin-tab-btn').forEach(b => b.classList.remove('active'));
-        $('.admin-pane').forEach(p => p.classList.remove('active'));
+        $$('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+        $$('.admin-pane').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         const target = $('#pane-admin-' + btn.dataset.adminPane);
         if (target) target.classList.add('active');
@@ -2769,10 +2809,10 @@ $('#btnOpenApiModal').onclick = () => $('#apiModal').classList.add('active');
 $('#btnCloseApiModal').onclick = () => $('#apiModal').classList.remove('active');
 $('#btnCloseApiModal2').onclick = () => $('#apiModal').classList.remove('active');
 
-$('.tab-btn').forEach(btn => {
+$$('.tab-btn').forEach(btn => {
   btn.onclick = () => {
-    $('.tab-btn').forEach(b => b.classList.remove('active'));
-    $('.tool-view').forEach(v => v.classList.remove('active'));
+    $$('.tab-btn').forEach(b => b.classList.remove('active'));
+    $$('.tool-view').forEach(v => v.classList.remove('active'));
     btn.classList.add('active');
     const target = $('#view-' + btn.dataset.tab);
     if (target) target.classList.add('active');
@@ -3755,15 +3795,17 @@ window.BgRemoveModule = {
     $('#btnAutoWhiteClean').onclick = () => this.autoRemoveWhite();
     $('#btnRunBgRemove').onclick = () => this.runBgRemove();
 
-    $('#btnBrushErase').onclick = () => this.setBrush('erase');
-    $('#btnBrushRestore').onclick = () => this.setBrush('restore');
+    const btnErase = $('#bgBrushErase') || $('#btnBrushErase');
+    if (btnErase) btnErase.onclick = () => this.setBrush('erase');
+    const btnRestore = $('#bgBrushRestore') || $('#btnBrushRestore');
+    if (btnRestore) btnRestore.onclick = () => this.setBrush('restore');
 
     $('#bgReplaceType').onchange = e => {
       $('#bgColorRow').style.display = e.target.value === 'color' ? 'flex' : 'none';
       this.updateDisplay();
     };
     $('#bgCustomColor').oninput = () => this.updateDisplay();
-    $('.color-quick').forEach(b => {
+    $$('.color-quick').forEach(b => {
       b.onclick = () => {
         $('#bgCustomColor').value = b.dataset.c;
         $('#bgReplaceType').value = 'color';
@@ -3996,17 +4038,25 @@ window.BgRemoveModule = {
   }
 };
 
-window.addEventListener('DOMContentLoaded', () => {
-  window.AuthManager.init();
-  window.FeedbackManager.init();
-  window.AdminManager.init();
-  window.ApiManager.init();
-  window.TrapezoidModule.init();
-  window.ConvertModule.init();
-  window.PdfSplitModule.init();
-  window.OcrModule.init();
-  window.BgRemoveModule.init();
-});
+function boot() {
+  if (window.AuthManager) window.AuthManager.init();
+  if (window.FeedbackManager) window.FeedbackManager.init();
+  if (window.AdminManager) window.AdminManager.init();
+  if (window.ApiManager) window.ApiManager.init();
+  if (window.TrapezoidModule) window.TrapezoidModule.init();
+  if (window.ConvertModule) window.ConvertModule.init();
+  if (window.PdfSplitModule) window.PdfSplitModule.init();
+  if (window.OcrModule) window.OcrModule.init();
+  if (window.BgRemoveModule) window.BgRemoveModule.init();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})(window, document);
 
 </script>
 </body>
