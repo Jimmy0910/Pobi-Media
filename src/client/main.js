@@ -215,10 +215,10 @@ window.AuthManager = {
     this.currentUser = { id: dev.id, username: dev.username, role: 'admin' };
     localStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
     
-    this.showAlert('⚡ 開發者管理員帳號 (developer) 已快速開通並自動登入！', 'success');
+    this.showAlert('開發者管理員帳號 (developer) 已快速開通並自動登入！', 'success');
     setTimeout(() => {
       this.unlockApp();
-      showToast('⚡ 歡迎開發者 developer！具備完整多媒體與後台最高管理權限。', 'success');
+      showToast('歡迎開發者 developer！具備完整多媒體與後台最高管理權限。', 'success');
       if (window.AdminManager) window.AdminManager.renderUsers();
     }, 350);
   },
@@ -243,7 +243,7 @@ window.AuthManager = {
     const remember = $('#authRemember')?.checked;
 
     if (!u) {
-      this.showAlert('請輸入帳號或電子郵件');
+      this.showAlert('請輸入使用者名稱');
       return;
     }
     if (!p || p.length < 4) {
@@ -260,7 +260,7 @@ window.AuthManager = {
         return;
       }
       if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
-        this.showAlert('此帳號名稱已被註冊，請切換至「會員登入」或更換名稱');
+        this.showAlert('此使用者名稱已被註冊，請切換至「會員登入」或更換一個未被使用的名稱');
         return;
       }
 
@@ -287,7 +287,7 @@ window.AuthManager = {
           return;
         }
       } else {
-        this.showAlert('找不到此帳號，請切換至「註冊新帳號」或點擊下方「一鍵開通開發者帳號」');
+        this.showAlert('找不到此使用者名稱，請切換至「註冊新帳號」或點擊下方「一次性申請開通開發者帳號」');
         return;
       }
 
