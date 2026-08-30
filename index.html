@@ -3285,7 +3285,8 @@ window.ApiManager = {
 
     try {
       const res = await fetch('/api/status');
-      if (res.ok) {
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
         this.serverStatus = await res.json();
         const srvKey = $('#srvKeyStatus');
         if (srvKey) srvKey.textContent = this.serverStatus.hasPublicApi ? '已啟用 (伺服器就緒)' : '未配置 (請使用離線 OCR 或輸入個人金鑰)';
@@ -3293,7 +3294,7 @@ window.ApiManager = {
         if (srvQuota) srvQuota.textContent = this.serverStatus.hasPublicApi ? this.serverStatus.remainingToday : 0;
       } else {
         const srvKey = $('#srvKeyStatus');
-        if (srvKey) srvKey.textContent = '未配置公用金鑰 (請使用離線 OCR 或輸入金鑰)';
+        if (srvKey) srvKey.textContent = '純前端模式 (請使用離線 OCR 或貼上個人金鑰)';
       }
     } catch (e) {
       const srvKey = $('#srvKeyStatus');
@@ -3350,9 +3351,14 @@ window.ApiManager = {
       body: JSON.stringify({ ...payload, model: 'gemini-1.5-flash' })
     });
 
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      throw new Error('伺服器尚未啟用後端 API 代理。請點擊右上角「AI 設定」輸入您的個人 Google Gemini API Key，或使用免金鑰的「Tesseract 本機離線引擎」！');
+    }
+
     if (res.status === 429) {
       this.checkServerStatus();
-      throw new Error('今日公用免費配額 (5次) 已用完，請在右上角「API 設定」輸入您的個人金鑰');
+      throw new Error('今日公用免費配額已用完，請在右上角「AI 設定」輸入您的個人金鑰');
     }
     if (!res.ok) {
       const err = await res.json().catch(() => ({ message: res.statusText }));

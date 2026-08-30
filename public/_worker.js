@@ -1,29 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-
-const clientDir = path.join(__dirname, '../src/client');
-const htmlTpl = fs.readFileSync(path.join(clientDir, 'template.html'), 'utf8');
-const css = fs.readFileSync(path.join(clientDir, 'style.css'), 'utf8');
-const js = fs.readFileSync(path.join(clientDir, 'main.js'), 'utf8');
-
-const outputHtml = htmlTpl.replace('/* {{CSS}} */', () => css).replace('/* {{JS}} */', () => js);
-
-const publicDir = path.join(__dirname, '../public');
-if (!fs.existsSync(publicDir)) { fs.mkdirSync(publicDir, { recursive: true }); }
-
-fs.writeFileSync(path.join(publicDir, 'index.html'), outputHtml, 'utf8');
-fs.writeFileSync(path.join(__dirname, '../index.html'), outputHtml, 'utf8');
-
-// 生成 Cloudflare Pages _routes.json
-const routesJson = {
-  version: 1,
-  include: ["/api/*"],
-  exclude: []
-};
-fs.writeFileSync(path.join(publicDir, '_routes.json'), JSON.stringify(routesJson, null, 2), 'utf8');
-
-// 生成 Cloudflare Pages Advanced Worker: public/_worker.js
-const workerCode = `// Cloudflare Pages Advanced Mode _worker.js
+// Cloudflare Pages Advanced Mode _worker.js
 const memoryUserMap = new Map();
 const ipUsageMap = new Map();
 let globalDailyCount = 0;
@@ -236,7 +211,3 @@ export default {
     return fetch(request);
   }
 };
-`;
-fs.writeFileSync(path.join(publicDir, '_worker.js'), workerCode, 'utf8');
-
-console.log('Build complete! Output size: ' + outputHtml.length + ' bytes. Generated _worker.js and _routes.json.');
