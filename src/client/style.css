@@ -1150,6 +1150,138 @@ canvas {
   color: #fca5a5;
   border: 1px solid rgba(220, 38, 38, 0.35);
 }
+
+/* ==================== 使用說明視窗樣式 ==================== */
+.help-tabs {
+  display: flex;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 4px 12px;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.help-tab-btn {
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  transition: all 0.15s ease;
+}
+
+.help-tab-btn.active {
+  background: var(--bg-panel);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-focus);
+}
+
+.help-pane {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+}
+.help-pane.active {
+  display: flex;
+}
+
+.help-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.help-card-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.help-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-input);
+  margin-top: 4px;
+}
+
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.help-table th {
+  background: var(--bg-card);
+  padding: 8px 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.help-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.help-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.help-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.help-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  background: rgba(37, 99, 235, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.help-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+}
+.help-step-list li {
+  margin-bottom: 2px;
+}
+
 .admin-role-badge.user {
   background: rgba(37, 99, 235, 0.2);
   color: #93c5fd;

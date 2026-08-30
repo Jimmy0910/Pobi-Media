@@ -406,6 +406,37 @@ window.AuthManager = {
   }
 };
 
+// ==================== 全功能使用說明與手冊管理器 (HelpManager) ====================
+window.HelpManager = {
+  init() {
+    const btnOpen = $('#btnOpenHelpModal');
+    const modal = $('#helpModal');
+    const btnClose1 = $('#btnCloseHelpModal');
+    const btnClose2 = $('#btnCloseHelpModal2');
+
+    if (btnOpen && modal) {
+      btnOpen.onclick = () => modal.classList.add('active');
+    }
+    if (btnClose1 && modal) {
+      btnClose1.onclick = () => modal.classList.remove('active');
+    }
+    if (btnClose2 && modal) {
+      btnClose2.onclick = () => modal.classList.remove('active');
+    }
+
+    // 分頁標籤切換
+    $$('.help-tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        $$('.help-tab-btn').forEach(b => b.classList.remove('active'));
+        $$('.help-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const target = $('#pane-help-' + btn.dataset.helpPane);
+        if (target) target.classList.add('active');
+      };
+    });
+  }
+};
+
 // ==================== 使用者意見回饋管理器 (FeedbackManager) ====================
 window.FeedbackManager = {
   init() {
@@ -2031,6 +2062,7 @@ window.BgRemoveModule = {
 
 function boot() {
   if (window.AuthManager) window.AuthManager.init();
+  if (window.HelpManager) window.HelpManager.init();
   if (window.FeedbackManager) window.FeedbackManager.init();
   if (window.AdminManager) window.AdminManager.init();
   if (window.ApiManager) window.ApiManager.init();
