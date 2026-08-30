@@ -12,7 +12,10 @@ export async function onRequestPost(context) {
         message: '伺服器未配置 GEMINI_API_KEY。請在右上角「AI 設定」輸入您的個人 Google Gemini API Key，或直接使用「Tesseract.js 本機離線引擎」進行 100% 免費無限制辨識！'
       }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
       });
     }
 
@@ -42,7 +45,21 @@ export async function onRequestPost(context) {
       message: err.message || 'AI 伺服器處理異常'
     }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
     });
   }
+}
+
+export async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    }
+  });
 }

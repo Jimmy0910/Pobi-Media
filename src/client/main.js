@@ -747,15 +747,36 @@ window.ApiManager = {
   },
 
   async checkServerStatus() {
+    if (window.location.protocol === 'file:') {
+      this.serverStatus = {
+        hasPublicApi: false,
+        dailyLimitPerUser: 5,
+        remainingToday: 0,
+        isAvailable: true
+      };
+      const srvKey = $('#srvKeyStatus');
+      if (srvKey) srvKey.textContent = '本機單機模式 (可使用離線 OCR 或輸入個人金鑰)';
+      const srvQuota = $('#srvQuotaLeft');
+      if (srvQuota) srvQuota.textContent = '無限制 (離線/自備)';
+      this.updateBadge();
+      return;
+    }
+
     try {
       const res = await fetch('/api/status');
       if (res.ok) {
         this.serverStatus = await res.json();
-        $('#srvKeyStatus').textContent = this.serverStatus.hasPublicApi ? '已啟用 (伺服器就緒)' : '未設定 (需使用個人金鑰)';
-        $('#srvQuotaLeft').textContent = this.serverStatus.remainingToday;
+        const srvKey = $('#srvKeyStatus');
+        if (srvKey) srvKey.textContent = this.serverStatus.hasPublicApi ? '已啟用 (伺服器就緒)' : '未配置 (請使用離線 OCR 或輸入個人金鑰)';
+        const srvQuota = $('#srvQuotaLeft');
+        if (srvQuota) srvQuota.textContent = this.serverStatus.hasPublicApi ? this.serverStatus.remainingToday : 0;
+      } else {
+        const srvKey = $('#srvKeyStatus');
+        if (srvKey) srvKey.textContent = '未配置公用金鑰 (請使用離線 OCR 或輸入金鑰)';
       }
     } catch (e) {
-      $('#srvKeyStatus').textContent = '離線模式';
+      const srvKey = $('#srvKeyStatus');
+      if (srvKey) srvKey.textContent = '離線 / 本地單機模式';
     }
     this.updateBadge();
   },
@@ -2093,6 +2114,8 @@ window.BgRemoveModule = {
     const out = $('#bgResultCanvas'), ovr = $('#bgBrushOverlay');
     out.width = w; out.height = h;
     ovr.width = w; ovr.height = h;
+    out.style.width = w + 'px'; out.style.height = h + 'px';
+    ovr.style.width = w + 'px'; ovr.style.height = h + 'px';
 
     const ctx = out.getContext('2d');
     ctx.clearRect(0, 0, w, h);
@@ -2109,11 +2132,11 @@ window.BgRemoveModule = {
 
     const getPos = e => {
       const r = ovr.getBoundingClientRect();
-      const scaleX = this.resultCanvas.width / ovr.width;
-      const scaleY = this.resultCanvas.height / ovr.height;
+      const scaleX = this.resultCanvas.width / r.width;
+      const scaleY = this.resultCanvas.height / r.height;
       return {
-        x: Math.round((e.clientX - r.left) * scaleX),
-        y: Math.round((e.clientY - r.top) * scaleY),
+        x: Math.max(0, Math.min(this.resultCanvas.width - 1, Math.round((e.clientX - r.left) * scaleX))),
+        y: Math.max(0, Math.min(this.resultCanvas.height - 1, Math.round((e.clientY - r.top) * scaleY))),
         screenX: e.clientX - r.left,
         screenY: e.clientY - r.top
       };
@@ -2141,16 +2164,28 @@ window.BgRemoveModule = {
       ctx.clearRect(0, 0, ovr.width, ovr.height);
 
       if (this.brushMode === 'erase' || this.brushMode === 'restore') {
-        const size = Number($('#bgBrushSize').value) * (ovr.width / this.resultCanvas.width);
+        const r = ovr.getBoundingClientRect();
+        const displayScale = r.width / this.resultCanvas.width;
+        const size = Number($('#bgBrushSize').value) * displayScale;
+
         ctx.beginPath();
         ctx.arc(pos.screenX, pos.screenY, size, 0, Math.PI * 2);
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.strokeStyle = this.brushMode === 'erase' ? '#ef4444' : '#22c55e';
         ctx.stroke();
 
         if (this.isPainting) {
           this.paintBrush(pos.x, pos.y);
         }
+      } else {
+        // Crosshair cursor dot for magic wand
+        ctx.beginPath();
+        ctx.arc(pos.screenX, pos.screenY, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#3b82f6';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
       }
     });
 
@@ -2171,7 +2206,7 @@ window.BgRemoveModule = {
       this.brushMode = 'none';
       $('#bgBrushErase')?.classList.remove('active');
       $('#bgBrushRestore')?.classList.remove('active');
-      showToast('已切換為魔術棒點選模式', 'info');
+      showToast('已切換為魔術棒點選模式（點擊任何背景處可直接去除）', 'info');
     } else {
       this.brushMode = mode;
       $('#bgBrushErase')?.classList.toggle('active', mode === 'erase');
@@ -2210,31 +2245,32 @@ window.BgRemoveModule = {
     const d = imgData.data;
 
     const startIdx = (startY * w + startX) * 4;
-    const targetR = d[startIdx], targetG = d[startIdx+1], targetB = d[startIdx+2], targetA = d[startIdx+3];
-    if (targetA === 0) return;
+    const startR = d[startIdx], startG = d[startIdx+1], startB = d[startIdx+2], startA = d[startIdx+3];
+    if (startA === 0) return;
 
-    const tol = Number($('#bgTolerance').value) * 1.8;
+    const tol = Number($('#bgTolerance').value) * 2.2;
     const visited = new Uint8Array(w * h);
     const queue = [startX, startY];
 
     while (queue.length > 0) {
       const cy = queue.pop();
       const cx = queue.pop();
-      const idx = (cy * w + cx) * 4;
+      const pos = cy * w + cx;
 
-      if (visited[cy * w + cx]) continue;
-      visited[cy * w + cx] = 1;
+      if (visited[pos]) continue;
+      visited[pos] = 1;
 
+      const idx = pos * 4;
       const r = d[idx], g = d[idx+1], b = d[idx+2];
-      const diff = Math.hypot(targetR - r, targetG - g, targetB - b);
+      const diff = Math.hypot(startR - r, startG - g, startB - b);
 
       if (diff <= tol) {
         d[idx+3] = 0;
 
-        if (cx > 0 && !visited[cy * w + (cx - 1)]) queue.push(cx - 1, cy);
-        if (cx < w - 1 && !visited[cy * w + (cx + 1)]) queue.push(cx + 1, cy);
-        if (cy > 0 && !visited[(cy - 1) * w + cx]) queue.push(cx, cy - 1);
-        if (cy < h - 1 && !visited[(cy + 1) * w + cx]) queue.push(cx, cy + 1);
+        if (cx > 0 && !visited[pos - 1]) queue.push(cx - 1, cy);
+        if (cx < w - 1 && !visited[pos + 1]) queue.push(cx + 1, cy);
+        if (cy > 0 && !visited[pos - w]) queue.push(cx, cy - 1);
+        if (cy < h - 1 && !visited[pos + w]) queue.push(cx, cy + 1);
       }
     }
 
@@ -2243,7 +2279,7 @@ window.BgRemoveModule = {
     ctx.putImageData(imgData, 0, 0);
 
     this.updateDisplay();
-    showToast('魔術棒去背完成', 'success');
+    showToast('魔術棒點選區域已清除', 'success');
   },
 
   autoRemoveWhite() {
@@ -2252,12 +2288,16 @@ window.BgRemoveModule = {
     const w = this.resultCanvas.width, h = this.resultCanvas.height;
     const imgData = ctx.getImageData(0, 0, w, h);
     const d = imgData.data;
-    const tol = Number($('#bgTolerance').value) * 2.2;
+    const tol = Number($('#bgTolerance').value) * 2.5;
 
     for (let i = 0; i < d.length; i += 4) {
       const r = d[i], g = d[i+1], b = d[i+2];
-      const dist = Math.hypot(255 - r, 255 - g, 255 - b);
-      if (dist <= tol) {
+      // Check brightness & saturation
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      const sat = Math.max(r, g, b) - Math.min(r, g, b);
+      const diffWhite = Math.hypot(255 - r, 255 - g, 255 - b);
+
+      if (diffWhite <= tol || (lum >= 255 - tol * 1.5 && sat <= 18)) {
         d[i+3] = 0;
       }
     }
@@ -2267,7 +2307,7 @@ window.BgRemoveModule = {
     ctx.putImageData(imgData, 0, 0);
 
     this.updateDisplay();
-    showToast('純白背景已清除', 'success');
+    showToast('公文/印章純白背景已清除', 'success');
   },
 
   smartAutoEdgeBgRemove() {
@@ -2277,27 +2317,29 @@ window.BgRemoveModule = {
     const imgData = ctx.getImageData(0, 0, w, h);
     const d = imgData.data;
 
-    // Sample corner colors
-    const corners = [
-      0,
-      (w - 1) * 4,
-      ((h - 1) * w) * 4,
-      ((h - 1) * w + (w - 1)) * 4
-    ];
+    // Collect 32 border samples along outer perimeter
+    const borderSamples = [];
+    const stepX = Math.max(1, Math.floor(w / 8));
+    const stepY = Math.max(1, Math.floor(h / 8));
 
-    let avgR = 0, avgG = 0, avgB = 0;
-    for (const c of corners) {
-      avgR += d[c];
-      avgG += d[c+1];
-      avgB += d[c+2];
+    for (let x = 0; x < w; x += stepX) {
+      const topIdx = (0 * w + x) * 4;
+      const botIdx = ((h - 1) * w + x) * 4;
+      borderSamples.push({ r: d[topIdx], g: d[topIdx+1], b: d[topIdx+2] });
+      borderSamples.push({ r: d[botIdx], g: d[botIdx+1], b: d[botIdx+2] });
     }
-    avgR /= 4; avgG /= 4; avgB /= 4;
+    for (let y = 0; y < h; y += stepY) {
+      const lIdx = (y * w + 0) * 4;
+      const rIdx = (y * w + (w - 1)) * 4;
+      borderSamples.push({ r: d[lIdx], g: d[lIdx+1], b: d[lIdx+2] });
+      borderSamples.push({ r: d[rIdx], g: d[rIdx+1], b: d[rIdx+2] });
+    }
 
-    const tol = Number($('#bgTolerance').value) * 2.0;
+    const tol = Number($('#bgTolerance').value) * 2.4;
     const visited = new Uint8Array(w * h);
     const queue = [];
 
-    // Push all border pixels to queue
+    // Initialize queue with all 4 boundary lines
     for (let x = 0; x < w; x++) {
       queue.push(x, 0);
       queue.push(x, h - 1);
@@ -2317,9 +2359,16 @@ window.BgRemoveModule = {
 
       const idx = pos * 4;
       const r = d[idx], g = d[idx+1], b = d[idx+2];
-      const diff = Math.hypot(avgR - r, avgG - g, avgB - b);
 
-      if (diff <= tol) {
+      // Minimum distance to any border color sample
+      let minDist = Infinity;
+      for (let i = 0; i < borderSamples.length; i++) {
+        const s = borderSamples[i];
+        const dist = Math.hypot(s.r - r, s.g - g, s.b - b);
+        if (dist < minDist) minDist = dist;
+      }
+
+      if (minDist <= tol) {
         d[idx+3] = 0;
 
         if (cx > 0 && !visited[pos - 1]) queue.push(cx - 1, cy);
@@ -2334,7 +2383,7 @@ window.BgRemoveModule = {
     ctx.putImageData(imgData, 0, 0);
 
     this.updateDisplay();
-    showToast('智慧邊緣去背完成', 'success');
+    showToast('智慧邊緣去背完成，可點擊殘留處進行魔術棒修補', 'success');
   },
 
   applyFeather(imgData, radius) {
@@ -2352,14 +2401,13 @@ window.BgRemoveModule = {
         const idx = y * w + x;
         if (alphaMap[idx] === 0) continue;
 
-        // Check if neighboring pixel is transparent
-        const hasTransparentNeighbor =
+        const isBorder =
           alphaMap[idx - 1] === 0 ||
           alphaMap[idx + 1] === 0 ||
           alphaMap[idx - w] === 0 ||
           alphaMap[idx + w] === 0;
 
-        if (hasTransparentNeighbor) {
+        if (isBorder) {
           d[idx * 4 + 3] = Math.round(d[idx * 4 + 3] * 0.45);
         }
       }
@@ -2378,12 +2426,12 @@ window.BgRemoveModule = {
       } else if (engine === 'white_clean') {
         this.autoRemoveWhite();
       } else if (engine === 'magic_wand') {
-        showToast('請在中間畫布點選您想要去除的背景顏色', 'info');
+        showToast('請在中間畫布點選您想要去除的背景區域', 'info');
       } else if (engine === 'gemini_ai') {
         btn.textContent = 'AI 深度分析中...';
-        showToast('正在透過 Gemini 深度模型分析邊界...', 'info');
+        showToast('正在分析主體輪廓...', 'info');
         this.smartAutoEdgeBgRemove();
-        showToast('AI 智慧輪廓去背完成', 'success');
+        showToast('AI 智慧去背完成', 'success');
       }
     } catch (e) {
       console.error(e);
