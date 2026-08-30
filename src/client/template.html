@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
 <title>Pobi Media｜多媒體與 PDF 專業工作站</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='36' y2='36' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2338bdf8'/%3E%3Cstop offset='50%25' stop-color='%232563eb'/%3E%3Cstop offset='100%25' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3ClinearGradient id='p' x1='0' y1='0' x2='0' y2='36' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%2360a5fa'/%3E%3Cstop offset='100%25' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='36' height='36' rx='8' fill='%230f172a'/%3E%3Cpath d='M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8' stroke='url(%23g)' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolygon points='19,13 25,17.5 19,22' fill='url(%23p)'/%3E%3C/svg%3E">
-<!-- 核心第三方函式庫 (ZIP 打包與 PDF 處理) -->
+<!-- 核心第三方函式庫 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 /* {{CSS}} */
 </style>
@@ -37,7 +39,7 @@
         </svg>
       </div>
       <div class="auth-title">Pobi Media</div>
-      <div class="auth-subtitle">透視校正與 PDF 專業工作站</div>
+      <div class="auth-subtitle">多媒體與 PDF 專業工作站</div>
     </div>
 
     <!-- 登入 / 註冊切換標籤 -->
@@ -114,14 +116,42 @@
     </div>
     <div class="brand-info">
       <span class="brand-title">Pobi Media</span>
-      <span class="brand-subtitle">透視校正與 PDF 專業工作站</span>
+      <span class="brand-subtitle">多媒體與 PDF 專業工作站</span>
     </div>
   </div>
 
+  <!-- 工具切換標籤 -->
+  <nav class="tabs-nav">
+    <button class="tab-btn active" data-tab="trapezoid">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 20h16L19 4H5L4 20z"/></svg>
+      透視校正
+    </button>
+    <button class="tab-btn" data-tab="convert">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      格式轉換與 PDF
+    </button>
+    <button class="tab-btn" data-tab="split">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+      PDF 頁面分割
+    </button>
+    <button class="tab-btn" data-tab="ocr">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 7V4h3"/><path d="M20 7V4h-3"/><path d="M4 17v3h3"/><path d="M20 17v3h-3"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+      文字辨識 OCR
+    </button>
+    <button class="tab-btn" data-tab="bgremove">
+      <svg class="icon" viewBox="0 0 24 24"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
+      背景去除
+    </button>
+  </nav>
+
   <div class="header-actions">
-    <div id="headerUserBtn" class="header-user-btn" title="使用者身分">
+    <div id="headerUserBtn" class="header-user-btn" title="使用者資訊">
       <div class="header-user-avatar" id="headerUserAvatar">U</div>
       <span id="headerUserName">使用者</span>
+    </div>
+    <div id="quotaBadge" class="status-badge" title="點擊設定 API 金鑰">
+      <span class="status-dot green" id="quotaDot"></span>
+      <span id="quotaText">連線中...</span>
     </div>
     <button id="btnOpenHelpModal" style="padding:5px 10px;font-size:12px" title="功能操作手冊與使用說明">
       <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -135,29 +165,35 @@
       <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       管理後台
     </button>
+    <button id="btnOpenApiModal" style="padding:5px 10px;font-size:12px">
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      API 設定
+    </button>
     <button id="btnSignOut" class="btn-signout" title="登出目前帳號">登出</button>
   </div>
 </header>
 
-<!-- 主容器：透視校正與 PDF 工作站 -->
+<!-- 主容器 -->
 <div class="main-container">
+
+  <!-- ==================== 模組 1: 透視校正 ==================== -->
   <section id="view-trapezoid" class="tool-view active">
     <div class="layout-3col">
       <!-- 左側清單 -->
       <aside class="panel">
         <div class="panel-header">
-          <span>待處理圖片清單</span>
+          <span>待處理圖片</span>
           <span id="trapCount" class="count-badge">0</span>
         </div>
         <div class="drop-zone" id="trapDrop">
           <svg class="icon-lg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <div class="drop-zone-title">拖曳圖片或點擊選取</div>
-          <div class="drop-zone-desc">支援 JPG, PNG, WebP (可多選)</div>
+          <div class="drop-zone-desc">JPG, PNG, WebP</div>
           <input type="file" id="trapFileIn" accept="image/*" multiple>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:11px;color:var(--text-muted)">佇列清單</span>
-          <button id="trapClearAll" class="btn-danger" style="padding:2px 8px;font-size:11px;min-height:24px">清空清單</button>
+          <span style="font-size:11px;color:var(--text-muted)">檔案清單</span>
+          <button id="trapClearAll" class="btn-danger" style="padding:2px 8px;font-size:11px;min-height:24px">清空</button>
         </div>
         <div class="file-list" id="trapList"></div>
       </aside>
@@ -170,7 +206,7 @@
           <button id="trapRotL">向左旋轉 90°</button>
           <button id="trapRotR">向右旋轉 90°</button>
           <div style="flex:1"></div>
-          <span style="font-size:11px;color:var(--text-muted)">拖曳四個角點進行透視拉平校正</span>
+          <span style="font-size:11px;color:var(--text-muted)">拖曳四個角點進行透視拉平</span>
         </div>
         <div class="stage-canvas-area" id="trapStageArea">
           <div id="trapEmptyHint" style="color:var(--text-muted);font-size:12px;text-align:center">
@@ -181,7 +217,7 @@
                 <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
               </svg>
             </div>
-            請從左側上傳圖片以進行透視校正
+            請上傳圖片以進行 WebGL 硬體加速透視校正
           </div>
           <div id="trapCanvasWrap" style="position:relative;display:none">
             <canvas id="trapPreview"></canvas>
@@ -192,20 +228,19 @@
 
       <!-- 右側設定與匯出 -->
       <aside class="panel right">
-        <div class="panel-header">輸出與匯出設定</div>
+        <div class="panel-header">輸出與傳送</div>
         <div class="config-group">
-          <div class="config-group-title">影像輸出參數</div>
+          <div class="config-group-title">影像輸出設定</div>
           <div class="config-row">
-            <label>匯出格式</label>
+            <label>格式</label>
             <select id="trapFormat">
-              <option value="image/jpeg">JPG 照片文件</option>
-              <option value="image/png">PNG 無損圖片</option>
-              <option value="image/webp">WEBP 現代網頁</option>
-              <option value="application/pdf">PDF 單頁文件</option>
+              <option value="image/jpeg">JPG</option>
+              <option value="image/png">PNG</option>
+              <option value="image/webp">WEBP</option>
             </select>
           </div>
           <div class="config-row">
-            <label>品質 (壓縮率)</label>
+            <label>品質</label>
             <input type="range" id="trapQuality" min="0.5" max="1" step="0.01" value="0.92">
             <span id="trapQualityVal" style="width:32px;text-align:right;font-size:11px;font-family:var(--font-mono)">92%</span>
           </div>
@@ -214,22 +249,487 @@
             <select id="trapMaxSize">
               <option value="0">原始解析度</option>
               <option value="3000">3000 px</option>
-              <option value="2000">2000 px (社群分享推薦)</option>
-              <option value="1500">1500 px (快速傳輸)</option>
+              <option value="2000">2000 px</option>
+              <option value="1500">1500 px</option>
             </select>
           </div>
         </div>
 
         <div class="config-group">
-          <div class="config-group-title">檔案匯出與下載</div>
-          <button id="trapDownloadCurrent" class="btn-success" style="width:100%" disabled>下載目前校正影像 / PDF</button>
+          <div class="config-group-title">跨工具傳送</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button id="trapSendToBg" class="btn-indigo">傳送至背景去除</button>
+            <button id="trapSendToOcr">傳送至文字辨識 (OCR)</button>
+            <button id="trapSendToPdf">加入 PDF 合成清單</button>
+          </div>
+        </div>
+
+        <div class="config-group">
+          <div class="config-group-title">檔案匯出</div>
+          <button id="trapDownloadCurrent" class="btn-success" style="width:100%" disabled>下載目前校正影像</button>
           <button id="trapDownloadAllZip" class="btn-primary" style="width:100%" disabled>批次打包下載 (ZIP)</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+
+  <!-- ==================== 模組 2: 格式轉檔 & PDF 合成器 ==================== -->
+  <section id="view-convert" class="tool-view">
+    <div class="layout-2col">
+      <!-- 左側清單 -->
+      <aside class="panel">
+        <div class="panel-header">
+          <span>待轉換檔案</span>
+          <span id="convCount" class="count-badge">0</span>
+        </div>
+        <div class="drop-zone" id="convDrop">
+          <svg class="icon-lg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div class="drop-zone-title">拖曳檔案至此處</div>
+          <div class="drop-zone-desc">JPG, PNG, WebP, SVG, BMP, TXT, MD</div>
+          <input type="file" id="convFileIn" accept="image/*,.txt,.md" multiple>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:var(--text-muted)">佇列清單</span>
+          <button id="convClearAll" class="btn-danger" style="padding:2px 8px;font-size:11px;min-height:24px">清空</button>
+        </div>
+        <div class="file-list" id="convList"></div>
+      </aside>
+
+      <!-- 右側轉換設定與匯出 -->
+      <main class="stage" style="padding:24px;overflow-y:auto">
+        <div style="max-width:760px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:18px">
+          <div class="config-group" style="padding:18px">
+            <div class="config-group-title" style="font-size:13px;color:var(--text-primary)">
+              模式 A：多檔合併生成 PDF 文件
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="config-row">
+                <label>頁面版面</label>
+                <select id="pdfPageLayout">
+                  <option value="a4">標準 A4</option>
+                  <option value="fit">自動適應圖片原圖比例</option>
+                  <option value="letter">US Letter</option>
+                </select>
+              </div>
+              <div class="config-row">
+                <label>頁面邊距</label>
+                <select id="pdfMargin">
+                  <option value="20">標準邊距 (20pt)</option>
+                  <option value="0">無邊距 (0pt)</option>
+                  <option value="40">寬邊距 (40pt)</option>
+                </select>
+              </div>
+              <div class="config-row" style="grid-column:1/-1">
+                <label>輸出檔名</label>
+                <input type="text" id="pdfFilename" value="PobiMedia_Merged.pdf">
+              </div>
+            </div>
+            <button id="btnBuildPdf" class="btn-primary" style="padding:10px;font-size:13px;width:100%;margin-top:4px">
+              合成並下載 PDF 文件
+            </button>
+          </div>
+
+          <div class="config-group" style="padding:18px">
+            <div class="config-group-title" style="font-size:13px;color:var(--text-primary)">
+              模式 B：批次圖片格式轉換
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="config-row">
+                <label>目標格式</label>
+                <select id="convTargetFormat">
+                  <option value="image/webp">WEBP (高效壓縮)</option>
+                  <option value="image/jpeg">JPG (最高相容性)</option>
+                  <option value="image/png">PNG (無失真保留透明度)</option>
+                </select>
+              </div>
+              <div class="config-row">
+                <label>品質</label>
+                <input type="range" id="convQuality" min="0.5" max="1" step="0.01" value="0.9">
+                <span id="convQualityVal" style="font-size:11px;width:32px;text-align:right;font-family:var(--font-mono)">90%</span>
+              </div>
+            </div>
+            <button id="btnBatchConvert" class="btn-success" style="padding:10px;font-size:13px;width:100%;margin-top:4px">
+              批次轉換並下載 ZIP 壓縮包
+            </button>
+          </div>
+        </div>
       </main>
     </div>
   </section>
 
 
+  <!-- ==================== 模組 3: PDF 頁面分割器 ==================== -->
+  <section id="view-split" class="tool-view">
+    <div class="layout-2col">
+      <!-- 左側設定 -->
+      <aside class="panel">
+        <div class="panel-header">
+          <span>PDF 頁面分割</span>
+          <span id="splitPageCount" class="count-badge">0 頁</span>
+        </div>
+        <div class="drop-zone" id="splitDrop">
+          <svg class="icon-lg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div class="drop-zone-title">選擇或拖曳 PDF 文件</div>
+          <div class="drop-zone-desc">純本地解析，支援雙頁掃描對切</div>
+          <input type="file" id="splitFileIn" accept="application/pdf">
+        </div>
 
+        <div class="config-group">
+          <div class="config-group-title">分割設定</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <button id="splitPresetV50" class="btn-primary" style="font-size:11px">垂直 50/50 對半</button>
+            <button id="splitPresetH50" class="btn-success" style="font-size:11px">水平 50/50 對半</button>
+          </div>
+          <div class="config-row">
+            <label>分割方向</label>
+            <select id="splitDirection">
+              <option value="vertical">左右垂直對切 (書籍雙頁掃描)</option>
+              <option value="horizontal">上下水平對切</option>
+            </select>
+          </div>
+          <div class="config-row">
+            <label>閱讀順序</label>
+            <select id="splitOrder">
+              <option value="ltr">由左至右 (左頁優先)</option>
+              <option value="rtl">由右至左 (日文書籍 / 漫畫)</option>
+            </select>
+          </div>
+          <div class="config-row">
+            <label>分割位置</label>
+            <input type="range" id="splitRatio" min="10" max="90" value="50">
+            <span id="splitRatioVal" style="font-size:11px;width:32px;text-align:right;font-family:var(--font-mono)">50%</span>
+          </div>
+          <button id="splitApplyAll" style="width:100%;font-size:11px">套用至所有頁面</button>
+        </div>
+
+        <button id="btnExportSplitPdf" class="btn-primary" style="width:100%;padding:10px;font-size:13px" disabled>
+          分割並匯出新 PDF
+        </button>
+      </aside>
+
+      <!-- 右側預覽畫布 -->
+      <main class="stage">
+        <div class="stage-toolbar">
+          <button id="splitPrevPage">上一頁</button>
+          <span id="splitPageIndicator" style="font-size:12px;font-weight:600;color:var(--text-primary);font-family:var(--font-mono)">第 0 / 0 頁</span>
+          <button id="splitNextPage">下一頁</button>
+          <div style="flex:1"></div>
+          <span style="font-size:11px;color:var(--text-muted)">可直接在預覽圖上拖曳紅色虛線</span>
+        </div>
+        <div class="stage-canvas-area" id="splitStageArea">
+          <div id="splitEmptyHint" style="color:var(--text-muted);font-size:12px;text-align:center">
+            <div class="empty-state-logo">
+              <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                <rect width="36" height="36" rx="8" fill="#111724" stroke="#1e293b" stroke-width="1.2"/>
+                <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
+              </svg>
+            </div>
+            請上傳 PDF 文件以設定裁切分割線
+          </div>
+          <div id="splitCanvasWrap" style="position:relative;display:none;box-shadow:0 10px 30px rgba(0,0,0,0.5)">
+            <canvas id="splitPdfCanvas"></canvas>
+            <canvas id="splitCutOverlay" style="position:absolute;top:0;left:0;cursor:ew-resize"></canvas>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+
+  <!-- ==================== 模組 4: 文字辨識 OCR ==================== -->
+  <section id="view-ocr" class="tool-view">
+    <div class="layout-3col">
+      <!-- 左側設定 -->
+      <aside class="panel">
+        <div class="panel-header">OCR 辨識設定</div>
+        <div class="drop-zone" id="ocrDrop">
+          <svg class="icon-lg" viewBox="0 0 24 24"><path d="M4 7V4h3"/><path d="M20 7V4h-3"/><path d="M4 17v3h3"/><path d="M20 17v3h-3"/></svg>
+          <div class="drop-zone-title">上傳辨識圖片</div>
+          <div class="drop-zone-desc">JPG, PNG, WebP</div>
+          <input type="file" id="ocrFileIn" accept="image/*">
+        </div>
+
+        <div class="config-group">
+          <div class="config-group-title">辨識引擎</div>
+          <div class="config-row">
+            <label>模式</label>
+            <select id="ocrEngine">
+              <option value="gemini">Gemini AI 視覺 (高精準 / 排版還原)</option>
+              <option value="tesseract">Tesseract.js WASM (純本地離線)</option>
+            </select>
+          </div>
+          <div class="config-row" id="ocrLangRow" style="display:none">
+            <label>語系</label>
+            <select id="ocrLanguage">
+              <option value="chi_tra+eng">繁體中文 + 英文</option>
+              <option value="chi_sim+eng">簡體中文 + 英文</option>
+              <option value="eng">純英文</option>
+              <option value="jpn+eng">日文 + 英文</option>
+            </select>
+          </div>
+          <div class="config-row">
+            <label>範圍</label>
+            <select id="ocrScope">
+              <option value="full">全圖辨識</option>
+              <option value="crop">畫布框選區域</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="btnStartOcr" class="btn-primary" style="width:100%;padding:10px;font-size:13px" disabled>
+          開始文字辨識
+        </button>
+
+        <div id="ocrProgressWrap" style="margin-top:8px;display:none">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px">
+            <span id="ocrProgressLabel">處理中...</span>
+            <span id="ocrProgressVal" style="font-family:var(--font-mono)">0%</span>
+          </div>
+          <div style="height:4px;background:var(--bg-input);border-radius:2px;overflow:hidden">
+            <div id="ocrProgressBar" style="height:100%;width:0%;background:var(--primary);transition:width .2s"></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 中間預覽與選取 -->
+      <main class="stage">
+        <div class="stage-toolbar">
+          <span style="font-size:12px;font-weight:600;color:var(--text-primary)">影像預覽與選取</span>
+          <div style="flex:1"></div>
+          <span style="font-size:11px;color:var(--text-muted)">提示：選擇「畫布框選」可在圖上拖曳選取矩形</span>
+        </div>
+        <div class="stage-canvas-area" id="ocrStageArea">
+          <div id="ocrEmptyHint" style="color:var(--text-muted);font-size:12px;text-align:center">
+            <div class="empty-state-logo">
+              <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                <rect width="36" height="36" rx="8" fill="#111724" stroke="#1e293b" stroke-width="1.2"/>
+                <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
+              </svg>
+            </div>
+            請上傳圖片以開始文字辨識
+          </div>
+          <div id="ocrCanvasWrap" style="position:relative;display:none">
+            <canvas id="ocrImgCanvas"></canvas>
+            <canvas id="ocrSelectOverlay" style="position:absolute;top:0;left:0"></canvas>
+          </div>
+        </div>
+      </main>
+
+      <!-- 右側文字輸出 -->
+      <aside class="panel right">
+        <div class="panel-header">
+          <span>辨識文字結果</span>
+          <button id="btnCopyOcrText" style="padding:2px 8px;font-size:11px;min-height:24px">複製文字</button>
+        </div>
+        <textarea id="ocrResultText" style="flex:1;min-height:260px;font-family:var(--font-mono);line-height:1.6;resize:none" placeholder="辨識文字將輸出於此處，支援直接編輯..."></textarea>
+
+        <div style="display:flex;gap:6px">
+          <button id="btnSaveOcrTxt" class="btn-success" style="flex:1;font-size:11px">下載 TXT</button>
+          <button id="btnSaveOcrMd" class="btn-indigo" style="flex:1;font-size:11px">下載 Markdown</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+
+  <!-- ==================== 模組 5: 背景去除 ==================== -->
+  <section id="view-bgremove" class="tool-view">
+    <div class="layout-3col">
+      <!-- 左側去背設定 -->
+      <aside class="panel">
+        <div class="panel-header">去背工具</div>
+        <div class="drop-zone" id="bgDrop">
+          <svg class="icon-lg" viewBox="0 0 24 24"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/></svg>
+          <div class="drop-zone-title">上傳去背圖片</div>
+          <div class="drop-zone-desc">人像、物件、簽名印章</div>
+          <input type="file" id="bgFileIn" accept="image/*">
+        </div>
+
+        <div class="config-group">
+          <div class="config-group-title">處理核心</div>
+          <div class="config-row">
+            <label>模式</label>
+            <select id="bgEngine">
+              <option value="fast_algo">極速純演算法 (魔術棒 / 印章清底)</option>
+              <option value="gemini_ai">Gemini AI 語意輪廓分析</option>
+            </select>
+          </div>
+          <div id="bgAlgoSettings">
+            <div class="config-row">
+              <label>容差 (Tolerance)</label>
+              <input type="range" id="bgTolerance" min="1" max="100" value="32">
+              <span id="bgToleranceVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">32</span>
+            </div>
+            <div class="config-row">
+              <label>邊緣羽化</label>
+              <input type="range" id="bgFeather" min="0" max="10" value="1">
+              <span id="bgFeatherVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">1px</span>
+            </div>
+            <button id="btnAutoWhiteClean" style="width:100%;font-size:11px;margin-top:4px">
+              清除純白背景 (公文簽名/印鑑)
+            </button>
+          </div>
+          <button id="btnRunBgRemove" class="btn-primary" style="width:100%;margin-top:8px;padding:8px" disabled>
+            執行去背處理
+          </button>
+        </div>
+
+        <div class="config-group">
+          <div class="config-group-title">手動筆刷修整</div>
+          <div style="display:flex;gap:6px">
+            <button id="bgBrushErase" class="btn-danger" style="flex:1;font-size:11px">擦除背景</button>
+            <button id="bgBrushRestore" class="btn-success" style="flex:1;font-size:11px">保留主體</button>
+          </div>
+          <div class="config-row">
+            <label>筆刷大小</label>
+            <input type="range" id="bgBrushSize" min="5" max="80" value="25">
+            <span id="bgBrushSizeVal" style="font-size:11px;width:28px;text-align:right;font-family:var(--font-mono)">25</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 中間畫布 -->
+      <main class="stage">
+        <div class="stage-toolbar">
+          <span style="font-size:12px;font-weight:600;color:var(--text-primary)">去背畫布預覽</span>
+          <div style="flex:1"></div>
+          <span style="font-size:11px;color:var(--text-muted)">點選影像背景可觸發魔術棒去背</span>
+        </div>
+        <div class="stage-canvas-area checkerboard" id="bgStageArea">
+          <div id="bgEmptyHint" style="color:var(--text-muted);font-size:12px;text-align:center">
+            <div class="empty-state-logo">
+              <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                <rect width="36" height="36" rx="8" fill="#111724" stroke="#1e293b" stroke-width="1.2"/>
+                <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
+              </svg>
+            </div>
+            請上傳圖片以開始去背處理
+          </div>
+          <div id="bgCanvasWrap" style="position:relative;display:none">
+            <canvas id="bgResultCanvas"></canvas>
+            <canvas id="bgBrushOverlay" style="position:absolute;top:0;left:0;cursor:crosshair"></canvas>
+          </div>
+        </div>
+      </main>
+
+      <!-- 右側背景替換與匯出 -->
+      <aside class="panel right">
+        <div class="panel-header">背景替換與匯出</div>
+        <div class="config-group">
+          <div class="config-group-title">替換背景顏色</div>
+          <div class="config-row">
+            <label>背景模式</label>
+            <select id="bgReplaceType">
+              <option value="transparent">透明背景 (PNG)</option>
+              <option value="color">純色背景</option>
+            </select>
+          </div>
+          <div class="config-row" id="bgColorRow" style="display:none">
+            <label>選擇色彩</label>
+            <input type="color" id="bgCustomColor" value="#ffffff" style="width:40px;height:26px;padding:0;cursor:pointer">
+            <div style="display:flex;gap:4px">
+              <button class="color-quick" data-c="#ffffff" style="padding:2px 6px;background:#fff;color:#000;font-size:10px;min-height:22px">白底</button>
+              <button class="color-quick" data-c="#dc2626" style="padding:2px 6px;background:#dc2626;color:#fff;font-size:10px;min-height:22px">紅底</button>
+              <button class="color-quick" data-c="#2563eb" style="padding:2px 6px;background:#2563eb;color:#fff;font-size:10px;min-height:22px">藍底</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-group">
+          <div class="config-group-title">跨工具傳送</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button id="bgSendToOcr">傳送至文字辨識</button>
+            <button id="bgSendToPdf">加入 PDF 合成清單</button>
+          </div>
+        </div>
+
+        <div class="config-group">
+          <div class="config-group-title">檔案匯出</div>
+          <button id="btnDownloadBgPng" class="btn-primary" style="width:100%" disabled>
+            下載透明 PNG
+          </button>
+          <button id="btnDownloadBgJpg" class="btn-success" style="width:100%" disabled>
+            下載 JPG
+          </button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+</div>
+
+<!-- ==================== 全域 API Key 設定視窗 ==================== -->
+<div class="modal-backdrop" id="apiModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Pobi Media 帳戶與 API 設定</h2>
+      <button id="btnCloseApiModal" style="background:transparent;border:0;color:var(--text-muted);padding:4px;min-height:auto;display:flex;align-items:center" title="關閉">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-brand-hero">
+      <div class="modal-brand-logo">
+        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+          <defs>
+            <linearGradient id="pobi-modal-g" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#38bdf8"/>
+              <stop offset="50%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </linearGradient>
+            <linearGradient id="pobi-modal-p" x1="0" y1="0" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#60a5fa"/>
+              <stop offset="100%" stop-color="#a855f7"/>
+            </linearGradient>
+          </defs>
+          <rect width="36" height="36" rx="8" fill="#0f172a" stroke="#1e293b" stroke-width="1.2"/>
+          <path d="M11 26V10h8a5 5 0 0 1 5 5c0 2.76-2.24 5-5 5h-8" stroke="url(#pobi-modal-g)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <polygon points="19,13 25,17.5 19,22" fill="url(#pobi-modal-p)"/>
+        </svg>
+      </div>
+      <div class="modal-brand-text">
+        <h3>Pobi Media Studio</h3>
+        <p>雲端無伺服器與本地混合智能媒體處理引擎</p>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--primary-light);border:1px solid rgba(37,99,235,0.25);border-radius:var(--radius-sm);padding:12px;font-size:12px;line-height:1.6">
+        <strong>配額機制說明：</strong><br>
+        1. <strong>免費公用配額</strong>：每位使用者每日提供 5 次免費 AI 調用額度。<br>
+        2. <strong>自備專屬金鑰</strong>：若需無限制使用，請至 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#60a5fa;text-decoration:underline">Google AI Studio</a> 申請 API Key 並填入下方。
+      </div>
+
+      <div class="config-group">
+        <div class="config-group-title">個人專屬 Gemini API Key (選填)</div>
+        <div style="position:relative">
+          <input type="password" id="inputUserApiKey" placeholder="請輸入 AIzaSy 開頭的金鑰..." style="padding-right:54px">
+          <button id="btnToggleKeyVisibility" style="position:absolute;right:3px;top:3px;padding:2px 8px;font-size:11px;min-height:26px">顯示</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.5">
+          金鑰僅儲存於您個人的瀏覽器端 (localStorage)，所有請求由前端直連 Google 官方伺服器，伺服器不留存任何記錄。
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="btnSaveApiKey" class="btn-primary" style="flex:1">儲存金鑰</button>
+          <button id="btnClearApiKey" class="btn-danger">清除</button>
+        </div>
+      </div>
+
+      <div class="config-group">
+        <div class="config-group-title">伺服器公用狀態</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">
+          • 伺服器公用金鑰：<span id="srvKeyStatus" style="font-weight:500">檢測中...</span><br>
+          • 今日公用剩餘額度：<span id="srvQuotaLeft" style="font-weight:600;color:#10b981;font-family:var(--font-mono)">--</span> 次
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="btnCloseApiModal2">關閉</button>
+    </div>
+  </div>
+</div>
 
 <!-- ==================== 使用者意見回饋視窗 ==================== -->
 <div class="modal-backdrop" id="feedbackModal">
@@ -289,80 +789,96 @@
     <div class="admin-tabs">
       <button class="admin-tab-btn active" data-admin-pane="users">
         <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        使用者清單與帳號管理
+        使用者帳號管理
       </button>
       <button class="admin-tab-btn" data-admin-pane="feedback">
         <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        使用者意見回饋檢閱
+        使用者回饋中心
+      </button>
+      <button class="admin-tab-btn" data-admin-pane="api">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        公用 API 管理
       </button>
       <button class="admin-tab-btn" data-admin-pane="privacy">
         <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        資安與隱私規範
+        資安與隱私審計
       </button>
     </div>
 
-    <div class="modal-body" style="max-height:60vh;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+    <div class="modal-body" style="padding:16px">
       <!-- 頁籤 1: 使用者帳號管理 -->
       <div class="admin-pane active" id="pane-admin-users">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:12px;color:var(--text-secondary)">
-            總註冊使用者數：<span id="adminUserCount" style="font-weight:600;color:var(--primary-hover)">0</span> 位
-          </div>
-          <button id="btnAdminRefreshUsers" style="font-size:11px;padding:3px 8px">重新整理清單</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <input type="text" id="adminUserSearch" placeholder="搜尋使用者帳號..." style="max-width:240px">
+          <span style="font-size:12px;color:var(--text-secondary)">
+            註冊總數：<strong id="adminUserCount" style="color:#ffffff">0</strong> 位使用者
+          </span>
         </div>
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
               <tr>
-                <th>使用者名稱</th>
-                <th>角色身份</th>
-                <th>建立時間</th>
-                <th>最後登入</th>
-                <th>管理操作</th>
+                <th>帳號名稱</th>
+                <th>角色</th>
+                <th>註冊時間</th>
+                <th style="text-align:right">管理操作</th>
               </tr>
             </thead>
-            <tbody id="adminUserListBody"></tbody>
+            <tbody id="adminUserTableBody">
+              <!-- 動態渲染使用者清單 -->
+            </tbody>
           </table>
         </div>
       </div>
 
-      <!-- 頁籤 2: 意見回饋檢閱 -->
+      <!-- 頁籤 2: 使用者回饋中心 -->
       <div class="admin-pane" id="pane-admin-feedback">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:12px;color:var(--text-secondary)">
-            收到的意見回饋：<span id="adminFeedbackCount" style="font-weight:600;color:var(--primary-hover)">0</span> 則
-          </div>
-          <div style="display:flex;gap:6px">
-            <button id="btnAdminExportFeedback" style="font-size:11px;padding:3px 8px">匯出 JSON</button>
-            <button id="btnAdminClearFeedback" class="btn-danger" style="font-size:11px;padding:3px 8px">清空所有回饋</button>
-          </div>
+          <span style="font-size:12px;color:var(--text-secondary)">
+            待處理回饋：<strong id="adminFeedbackCount" style="color:#ffffff">0</strong> 則
+          </span>
+          <button id="adminClearAllFeedback" class="btn-danger" style="padding:4px 8px;font-size:11px">清空所有回饋</button>
         </div>
-        <div class="admin-table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>時間</th>
-                <th>類型</th>
-                <th>主旨</th>
-                <th>使用者</th>
-                <th>詳細內容與聯絡資訊</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="adminFeedbackListBody"></tbody>
-          </table>
+        <div id="adminFeedbackList" style="display:flex;flex-direction:column;gap:10px;max-height:340px;overflow-y:auto">
+          <!-- 動態渲染回饋項目 -->
         </div>
       </div>
 
-      <!-- 頁籤 3: 資安與隱私規範 -->
+      <!-- 頁籤 3: 公用 API 管理 -->
+      <div class="admin-pane" id="pane-admin-api">
+        <div class="config-group">
+          <div class="config-group-title">Cloudflare 邊緣公用 API Key 設定</div>
+          <div class="config-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+            <label>自訂伺服器端公用金鑰 (覆寫備援)</label>
+            <div style="display:flex;gap:8px;width:100%">
+              <input type="password" id="adminPublicApiKey" placeholder="AIzaSy 開頭的 Gemini API Key..." style="flex:1">
+              <button id="btnAdminSavePublicApi" class="btn-primary">更新設定</button>
+            </div>
+            <span style="font-size:11px;color:var(--text-muted)">
+              此金鑰將作為未自備金鑰之使用者的公用調用配額來源 (受每人每日 5 次限流保護)。
+            </span>
+          </div>
+        </div>
+
+        <div class="config-group">
+          <div class="config-group-title">公用配額健康狀態檢測</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+            <span>Google Gemini 2.5 Flash 端點狀態：</span>
+            <button id="btnAdminTestApi" style="padding:4px 10px;font-size:11px">測試連線</button>
+          </div>
+          <div id="adminApiTestResult" style="font-size:12px;font-family:var(--font-mono);padding:8px;background:var(--bg-input);border-radius:4px;display:none"></div>
+        </div>
+      </div>
+
+      <!-- 頁籤 4: 資安與隱私審計 -->
       <div class="admin-pane" id="pane-admin-privacy">
         <div class="privacy-card">
-          <strong style="color:#ffffff;font-size:13px">隱私隔離與零信任架構規範</strong>
+          <strong style="color:#ffffff;font-size:13px">隱私隔離與零信任金鑰架構規範</strong>
           <div>
-            1. <strong>影像本機隔離</strong>：所有透視拉平與影像處理 100% 在使用者個人瀏覽器本機內以 WebGL/Canvas 完成，原始照片不外傳。
+            1. <strong>嚴禁調閱私有金鑰</strong>：本系統架構設計嚴格限制管理者權限，使用者的個人自備 Gemini API Key 僅以本機客戶端隔離方式存在使用者個人瀏覽器中，不傳輸至伺服器，管理者控制台完全無法讀取或檢視。
           </div>
           <div>
-            2. <strong>授權職責範圍</strong>：管理者僅具備「使用者生命週期管理 (刪除無效帳號)」、「協助忘記密碼之使用者重設密碼」及「檢閱使用者問題回饋」之權限。
+            2. <strong>授權職責範圍</strong>：管理者僅具備「使用者生命週期管理 (刪除無效帳號)」、「協助忘記密碼之使用者重設密碼」、「檢閱使用者問題回饋」及「維護伺服器公用 API Key 健康度」之權限。
           </div>
           <div>
             3. <strong>審計狀態</strong>：所有安全隔離規則已通過品質門禁驗證。
@@ -383,7 +899,7 @@
     <div class="modal-header">
       <div style="display:flex;align-items:center;gap:8px">
         <svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;color:#38bdf8"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <h2>Pobi Media 透視校正與 PDF 操作手冊</h2>
+        <h2>Pobi Media 專業工作站操作手冊與使用說明</h2>
       </div>
       <button id="btnCloseHelpModal" style="background:transparent;border:0;color:var(--text-muted);padding:4px;min-height:auto;display:flex;align-items:center" title="關閉">
         <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -393,9 +909,12 @@
     <!-- 說明導覽分頁 -->
     <div class="help-tabs">
       <button class="help-tab-btn active" data-help-pane="overview">工作站概覽</button>
-      <button class="help-tab-btn" data-help-pane="trapezoid">透視校正流程</button>
-      <button class="help-tab-btn" data-help-pane="export">輸出與 PDF 匯出</button>
-      <button class="help-tab-btn" data-help-pane="sliders">拉桿參數速查</button>
+      <button class="help-tab-btn" data-help-pane="trapezoid">透視校正</button>
+      <button class="help-tab-btn" data-help-pane="convert">格式轉換與 PDF</button>
+      <button class="help-tab-btn" data-help-pane="split">PDF 頁面管理</button>
+      <button class="help-tab-btn" data-help-pane="ocr">文字辨識 OCR</button>
+      <button class="help-tab-btn" data-help-pane="bgremove">背景去除</button>
+      <button class="help-tab-btn" data-help-pane="sliders">拉桿與參數速查</button>
     </div>
 
     <div class="modal-body" style="max-height:60vh;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px">
@@ -403,27 +922,29 @@
       <!-- 分頁 1: 工作站概覽 -->
       <div class="help-pane active" id="pane-help-overview">
         <div class="help-card">
-          <div class="help-card-title">關於 Pobi Media 專業工作站</div>
-          <div>Pobi Media 是一套高效率的純前端本機運算多媒體處理系統，專為照片文件拉平、梯形透視校正、高品質 JPG/PNG/WEBP 下載及多圖合併多頁 PDF 文件而設計。</div>
-          <div><strong>核心優勢：</strong></div>
+          <div class="help-card-title">關於 Pobi Media 多媒體專業工作站</div>
+          <div>Pobi Media 是一套高效率的純前端與雲端整合多媒體處理系統，專為文件影像拉平、格式轉檔、PDF 編輯、離線 OCR 文字提取與 AI 智慧去背而設計。</div>
+          <div><strong>核心特點：</strong></div>
           <ul class="help-step-list">
-            <li><strong>極致隱私安全</strong>：影像處理 100% 在您的瀏覽器本機端透過 WebGL 與 HTML5 Canvas 完成，圖片不外流。</li>
-            <li><strong>跨裝置雲端帳號</strong>：支援電腦、平板與手機多裝置切換，帳號隨處登入。</li>
-            <li><strong>秒速生成 PDF</strong>：無須繁瑣中轉，校正完畢即刻一鍵輸出多頁 PDF 文件。</li>
+            <li><strong>極致隱私安全</strong>：影像處理 100% 在您的瀏覽器本機端透過 WebGL 與 Canvas 完成運算，原始照片不強制上傳至第三方伺服器。</li>
+            <li><strong>跨裝置雲端帳號</strong>：支援多裝置無縫切換，無論在電腦、平板或手機上均可隨時登入。</li>
+            <li><strong>跨模組無縫傳送</strong>：校正後的影像可一鍵傳送至「背景去除」、「OCR 文字辨識」或「PDF 合成清單」，無需繁瑣重複存檔與上傳。</li>
           </ul>
         </div>
 
         <div class="help-card">
-          <div class="help-card-title">頂部導覽列按鈕說明</div>
+          <div class="help-card-title">頂部導覽列按鈕作用說明</div>
           <div class="help-table-wrap">
             <table class="help-table">
               <thead><tr><th>按鈕項目</th><th>類型</th><th>作用說明</th></tr></thead>
               <tbody>
-                <tr><td><span class="help-tag">使用者身分</span></td><td>資訊指示</td><td>顯示目前登入的使用者名稱。</td></tr>
-                <tr><td><span class="help-tag">使用說明</span></td><td>操作視窗</td><td>隨時開啟本手冊，查閱透視校正、按鈕功能與拉桿參數。</td></tr>
-                <tr><td><span class="help-tag">意見回饋</span></td><td>互動表單</td><td>提交問題回報 (Bug)、新功能建議與操作諮詢。</td></tr>
-                <tr><td><span class="help-tag">管理後台</span></td><td>管理員專屬</td><td>管理員專用，提供使用者帳號管理與意見回饋檢閱。</td></tr>
-                <tr><td><span class="help-tag">登出</span></td><td>身分控制</td><td>登出目前帳號並安全返回登入畫面。</td></tr>
+                <tr><td><span class="help-tag">使用者身分 (頭像)</span></td><td>資訊指示</td><td>顯示目前登入的使用者名稱，點擊可快速開啟 API 設定視窗。</td></tr>
+                <tr><td><span class="help-tag">連線狀態燈</span></td><td>狀態指示</td><td>即時指示與 Cloudflare 後端及 Google Gemini 伺服器的連線健康度。</td></tr>
+                <tr><td><span class="help-tag">使用說明</span></td><td>操作視窗</td><td>隨時開啟本操作手冊，查閱所有功能、按鈕與拉桿的詳細參數解說。</td></tr>
+                <tr><td><span class="help-tag">意見回饋</span></td><td>互動表單</td><td>提供問題回報 (Bug)、新功能建議與操作諮詢，送出後由管理員於後台審閱。</td></tr>
+                <tr><td><span class="help-tag">管理後台</span></td><td>管理員專屬</td><td>僅具備管理員權限之帳號可見，提供使用者管理、回饋檢閱與公用 API 設定。</td></tr>
+                <tr><td><span class="help-tag">API 設定</span></td><td>配置面板</td><td>設定個人專屬 Google Gemini API Key 或檢視每日免費公用呼叫配額。</td></tr>
+                <tr><td><span class="help-tag">登出</span></td><td>身分控制</td><td>清除本機 Session 並安全返回進入驗證閘門。</td></tr>
               </tbody>
             </table>
           </div>
@@ -433,69 +954,194 @@
       <!-- 分頁 2: 透視校正 -->
       <div class="help-pane" id="pane-help-trapezoid">
         <div class="help-card">
-          <div class="help-card-title">透視校正 3 步操作流程</div>
+          <div class="help-card-title">透視校正模組使用流程</div>
           <ol class="help-step-list">
-            <li><strong>匯入圖片</strong>：在左側面板點擊上傳或直接拖曳圖片至待處理清單中（支援多張批次匯入）。</li>
-            <li><strong>拖曳拉平</strong>：在中央畫布拖曳四個角點（左上、右上、右下、左下）緊密貼合文件或照片的四個角落。</li>
-            <li><strong>匯出下載</strong>：在右側面板設定輸出格式、品質與長邊限制，點擊下載影像或匯出 PDF。</li>
+            <li>在左側面板點擊上傳或直接拖曳圖片至待處理清單中（支援多張批次匯入）。</li>
+            <li>在中央畫布拖曳四個角點（左上、右上、右下、左下）緊密貼合文件或照片的四個角落。</li>
+            <li>在右側面板設定輸出格式、品質與長邊限制。</li>
+            <li>點擊「下載目前校正影像」或「批次打包下載 (ZIP)」即可取得水平端正的高解析成果。</li>
           </ol>
         </div>
 
         <div class="help-card">
-          <div class="help-card-title">畫布工具列按鈕說明</div>
+          <div class="help-card-title">校正畫布頂部按鈕說明</div>
           <div class="help-table-wrap">
             <table class="help-table">
               <thead><tr><th>按鈕名稱</th><th>作用說明</th><th>使用時機</th></tr></thead>
               <tbody>
-                <tr><td><span class="help-tag">重設四角</span></td><td>將四個控制角點還原至影像外圍邊界。</td><td>當四角拖曳失誤想重新標記時使用。</td></tr>
-                <tr><td><span class="help-tag">自動置中</span></td><td>將目前影像縮放並置於中央工作區。</td><td>放大或偏移檢視後還原視野。</td></tr>
-                <tr><td><span class="help-tag">向左旋轉 90°</span></td><td>逆時針旋轉原始圖片 90 度。</td><td>照片橫置或倒立時修正。</td></tr>
-                <tr><td><span class="help-tag">向右旋轉 90°</span></td><td>順時針旋轉原始圖片 90 度。</td><td>順時針旋轉修正。</td></tr>
+                <tr><td><span class="help-tag">重設四角</span></td><td>將四個控制角點還原至影像外圍預設邊界位置。</td><td>當四角拖曳偏離過多想重新標記時使用。</td></tr>
+                <tr><td><span class="help-tag">自動置中</span></td><td>將目前影像縮放並置於中央可視工作區。</td><td>圖片放大或偏移檢視後還原視野。</td></tr>
+                <tr><td><span class="help-tag">向左旋轉 90°</span></td><td>逆時針旋轉原始圖片 90 度。</td><td>拍照時照片橫置或倒立時快速修正。</td></tr>
+                <tr><td><span class="help-tag">向右旋轉 90°</span></td><td>順時針旋轉原始圖片 90 度。</td><td>修正旋轉方向。</td></tr>
               </tbody>
             </table>
           </div>
         </div>
-      </div>
 
-      <!-- 分頁 3: 輸出與 PDF 匯出 -->
-      <div class="help-pane" id="pane-help-export">
         <div class="help-card">
-          <div class="help-card-title">輸出設定與匯出格式說明</div>
+          <div class="help-card-title">右側輸出設定與跨工具按鈕</div>
           <div class="help-table-wrap">
             <table class="help-table">
-              <thead><tr><th>匯出格式 / 按鈕</th><th>說明</th><th>適用場景</th></tr></thead>
+              <thead><tr><th>控制項目</th><th>可選數值 / 作用</th><th>建議與用途</th></tr></thead>
               <tbody>
-                <tr><td><span class="help-tag">JPG 照片文件</span></td><td>標準 JPEG 壓縮格式。</td><td>適合一般文件翻拍、書本掃描、生活照片。</td></tr>
-                <tr><td><span class="help-tag">PNG 無損圖片</span></td><td>高解析無損格式。</td><td>適合圖表、證件、印鑑、帶線條的文件。</td></tr>
-                <tr><td><span class="help-tag">WEBP 現代網頁</span></td><td>新一代高壓縮率格式。</td><td>適合網頁發布與行動端快速傳輸。</td></tr>
-                <tr><td><span class="help-tag">PDF 單頁文件</span></td><td>將當前校正圖片封裝為標準單頁 PDF。</td><td>需單獨繳交或傳送 PDF 檔案時使用。</td></tr>
-                <tr><td><span class="help-tag">批次打包下載 (ZIP)</span></td><td>將佇列中所有校正好的圖片打包為 ZIP 下載。</td><td>多張圖片批次大量處理時使用。</td></tr>
-                <tr><td><span class="help-tag">批次合併匯出為多頁 PDF</span></td><td>將佇列中所有校正好的圖片依序組合成一份完整多頁 PDF 文件。</td><td>多頁合約、論文、掃描書籍整本匯出。</td></tr>
+                <tr><td><span class="help-tag">輸出格式</span></td><td>JPG / PNG / WEBP</td><td>JPG 適合相片文件；PNG 適合線條銳利圖檔；WEBP 適合現代網頁傳輸。</td></tr>
+                <tr><td><span class="help-tag">品質 (Quality)</span></td><td>50% ~ 100% 滑桿 (預設 92%)</td><td>控制 JPG/WEBP 壓縮率。92% 兼具極佳畫質與大幅降低檔案大小。</td></tr>
+                <tr><td><span class="help-tag">長邊限制</span></td><td>原始解析度 / 3000px / 2000px / 1500px</td><td>等比例縮小圖片長邊像素，社群與網頁上傳建議設定為 2000px。</td></tr>
+                <tr><td><span class="help-tag">傳送至背景去除</span></td><td>一鍵傳送影像</td><td>校正平整後立即送去消除背景。</td></tr>
+                <tr><td><span class="help-tag">傳送至文字辨識</span></td><td>一鍵傳送影像</td><td>校正平整後立即提取中文與英文文字。</td></tr>
+                <tr><td><span class="help-tag">加入 PDF 合成清單</span></td><td>加入待轉檔陣列</td><td>將校正好的多張文件加入待產生的 PDF 清單。</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- 分頁 4: 拉桿參數速查 -->
+      <!-- 分頁 3: 格式轉換與 PDF -->
+      <div class="help-pane" id="pane-help-convert">
+        <div class="help-card">
+          <div class="help-card-title">格式轉換與多圖合併 PDF 說明</div>
+          <div>本功能支援將多張不同格式的影像（JPG、PNG、WEBP）批次轉檔，或直接合併為一份標準的高品質 PDF 文件。</div>
+        </div>
+
+        <div class="help-card">
+          <div class="help-card-title">PDF 版面設定與控制項</div>
+          <div class="help-table-wrap">
+            <table class="help-table">
+              <thead><tr><th>設定名稱</th><th>選項與範圍</th><th>作用與說明</th></tr></thead>
+              <tbody>
+                <tr><td><span class="help-tag">目標格式</span></td><td>PDF / JPG / PNG / WEBP</td><td>選擇輸出為單一合併 PDF，或是批次轉檔為多張圖片。</td></tr>
+                <tr><td><span class="help-tag">PDF 頁面方向</span></td><td>自動 / 縱向直式 / 橫向橫式</td><td>自動模式會依據每張照片本身的長寬比自動調整該頁的方向。</td></tr>
+                <tr><td><span class="help-tag">PDF 邊距大小</span></td><td>無邊距 (0pt) / 緊湊 (10pt) / 標準 (20pt) / 寬邊距 (36pt)</td><td>設定圖片四周與 PDF 紙張邊界之間的留白距離。</td></tr>
+                <tr><td><span class="help-tag">PDF 頁面尺寸</span></td><td>符合影像大小 / A4 (595x842) / Letter</td><td>選擇符合國際標準 A4 列印規格或以圖片原始長寬產生頁面。</td></tr>
+                <tr><td><span class="help-tag">排序控制 (上移/下移/刪除)</span></td><td>清單微調</td><td>調整每張圖片在合併後 PDF 裡的頁碼順序。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分頁 4: PDF 頁面管理 -->
+      <div class="help-pane" id="pane-help-split">
+        <div class="help-card">
+          <div class="help-card-title">PDF 頁面分割與重組功能</div>
+          <div>上傳現有的 PDF 文件後，系統會即時為每一頁產生可視化縮圖，您可以自由旋轉、刪除或提取指定頁面產生新文件。</div>
+        </div>
+
+        <div class="help-card">
+          <div class="help-card-title">操作按鈕與功用</div>
+          <div class="help-table-wrap">
+            <table class="help-table">
+              <thead><tr><th>操作按鈕</th><th>作用說明</th><th>使用場景</th></tr></thead>
+              <tbody>
+                <tr><td><span class="help-tag">全選 / 反選 / 清除</span></td><td>批次切換勾選狀態</td><td>快速批次選擇要保留或提取的頁面。</td></tr>
+                <tr><td><span class="help-tag">單頁旋轉 90°</span></td><td>順時針旋轉當前頁面</td><td>修正掃描時放反或橫向的單一頁面。</td></tr>
+                <tr><td><span class="help-tag">刪除所選頁面</span></td><td>從清單中移除勾選頁</td><td>剔除 PDF 中的封面、空白頁或無用頁面。</td></tr>
+                <tr><td><span class="help-tag">匯出所選頁面為新 PDF</span></td><td>提取勾選頁獨立打包</td><td>從百頁大檔案中快速擷取關鍵章節為小檔案。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分頁 5: 文字辨識 OCR -->
+      <div class="help-pane" id="pane-help-ocr">
+        <div class="help-card">
+          <div class="help-card-title">文字辨識 (OCR) 與 AI 智慧助理</div>
+          <div>內建 Tesseract.js 本機端光學辨識引擎與 Google Gemini 2.5 智慧模型，兼顧隱私與強大語意排版。</div>
+        </div>
+
+        <div class="help-card">
+          <div class="help-card-title">按鈕與功能說明</div>
+          <div class="help-table-wrap">
+            <table class="help-table">
+              <thead><tr><th>功能項目</th><th>核心作用</th><th>說明</th></tr></thead>
+              <tbody>
+                <tr><td><span class="help-tag">語言選擇</span></td><td>繁體中文+英文 / 英文 / 簡體中文</td><td>依據文件語系選擇最精準的離線辨識語言模型。</td></tr>
+                <tr><td><span class="help-tag">開始本機 OCR 辨識</span></td><td>純本地瀏覽器運算</td><td>不消耗任何 API 配額，100% 離線提取圖中文字。</td></tr>
+                <tr><td><span class="help-tag">Gemini AI 智慧排版校對</span></td><td>AI 自動修正錯字與段落</td><td>修正 OCR 掃描誤判字詞，將零碎文字重整為段落分明的文章。</td></tr>
+                <tr><td><span class="help-tag">Gemini AI 內容重點摘要</span></td><td>AI 提煉重點精華</td><td>自動分析長篇文件並條列核心要點大綱。</td></tr>
+                <tr><td><span class="help-tag">複製文字 / 下載 TXT</span></td><td>匯出辨識成果</td><td>一鍵將辨識純文字貼至剪貼簿或存為純文字檔案。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分頁 6: 背景去除 -->
+      <div class="help-pane" id="pane-help-bgremove">
+        <div class="help-card">
+          <div class="help-card-title">背景去除 (去背) 模組說明</div>
+          <div>支援純色智慧魔棒、容差演算法、手動筆刷擦除還原與自訂背景底色替換。</div>
+        </div>
+
+        <div class="help-card">
+          <div class="help-card-title">去背核心拉桿與按鈕說明</div>
+          <div class="help-table-wrap">
+            <table class="help-table">
+              <thead><tr><th>拉桿 / 按鈕</th><th>數值範圍 / 作用</th><th>操作技巧與建議</th></tr></thead>
+              <tbody>
+                <tr><td><span class="help-tag">容差值 (Tolerance)</span></td><td>0 ~ 100 滑桿 (預設 30)</td><td>控制顏色識別範圍。數值越大，與背景相近的顏色一併清除越多。純白背景建議設 20~35。</td></tr>
+                <tr><td><span class="help-tag">邊緣羽化 (Feather)</span></td><td>0 ~ 10 px 滑桿 (預設 2px)</td><td>平滑主體外圍邊緣，避免產生生硬鋸齒狀邊緣。</td></tr>
+                <tr><td><span class="help-tag">智慧純色一鍵去背</span></td><td>自動偵測背景</td><td>自動依據四個角落像素色票，將相連背景直接挖空透明。</td></tr>
+                <tr><td><span class="help-tag">筆刷大小 (Brush Size)</span></td><td>5 ~ 80 px 滑桿 (預設 25)</td><td>調整手動塗抹時筆刷的直徑粗細。細部修飾建議設 8~12px。</td></tr>
+                <tr><td><span class="help-tag">擦除背景 (紅按鈕)</span></td><td>手動筆刷塗抹</td><td>以紅色游標手動擦除多餘殘留的背景雜質。</td></tr>
+                <tr><td><span class="help-tag">保留主體 (綠按鈕)</span></td><td>手動筆刷還原</td><td>以綠色游標手動塗抹還原被誤刪的主體部位。</td></tr>
+                <tr><td><span class="help-tag">背景替換</span></td><td>透明 (PNG) / 純色填補</td><td>去背後可直接套用白色、淺灰、藍色等證件照底色或自訂調色盤。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分頁 7: 拉桿與參數速查總表 -->
       <div class="help-pane" id="pane-help-sliders">
         <div class="help-card">
-          <div class="help-card-title">拉桿 (Slider) 與參數速查表</div>
+          <div class="help-card-title">全系統拉桿 (Slider) 與設定值速查總表</div>
           <div class="help-table-wrap">
             <table class="help-table">
-              <thead><tr><th>參數名稱</th><th>數值範圍</th><th>預設推薦值</th><th>生活化比喻與調校建議</th></tr></thead>
+              <thead><tr><th>拉桿名稱</th><th>所屬模組</th><th>數值範圍</th><th>預設推薦值</th><th>生活化比喻與調校建議</th></tr></thead>
               <tbody>
                 <tr>
                   <td><strong>品質 (Quality)</strong></td>
+                  <td>透視校正 / 格式轉換</td>
                   <td>50% ~ 100%</td>
                   <td><span class="help-tag">92%</span></td>
                   <td><strong>真空收納袋</strong>：抽得越緊（數值低）檔案越小，但過低會產生噪點。90%~92% 為畫質與檔案大小的最佳黃金平衡。</td>
                 </tr>
                 <tr>
                   <td><strong>長邊限制</strong></td>
+                  <td>透視校正</td>
                   <td>原始 / 3000 / 2000 / 1500 px</td>
                   <td><span class="help-tag">原始解析度</span></td>
                   <td><strong>等比例影印縮放</strong>：改變長寬像素數量而不變形。若要傳送給他人或上傳社群，推薦設定為 2000px。</td>
+                </tr>
+                <tr>
+                  <td><strong>容差值 (Tolerance)</strong></td>
+                  <td>背景去除</td>
+                  <td>0 ~ 100</td>
+                  <td><span class="help-tag">30</span></td>
+                  <td><strong>色票寬容度</strong>：容差越小只刪除完全相同顏色；容差越大會把微黃、微灰的鄰近白底一併清乾淨。</td>
+                </tr>
+                <tr>
+                  <td><strong>邊緣羽化 (Feather)</strong></td>
+                  <td>背景去除</td>
+                  <td>0 ~ 10 px</td>
+                  <td><span class="help-tag">2 px</span></td>
+                  <td><strong>柔焦磨邊砂紙</strong>：數值太低邊緣銳利有鋸齒；數值設為 2~3px 能讓去背邊緣與任何背景自然融合。</td>
+                </tr>
+                <tr>
+                  <td><strong>筆刷大小</strong></td>
+                  <td>背景去除</td>
+                  <td>5 ~ 80 px</td>
+                  <td><span class="help-tag">25 px</span></td>
+                  <td><strong>毛筆粗細</strong>：大範圍清理用大筆刷（50px+），人物髮絲或文件細部修補用小筆刷（8~15px）。</td>
+                </tr>
+                <tr>
+                  <td><strong>PDF 邊距</strong></td>
+                  <td>格式轉換與 PDF</td>
+                  <td>0 ~ 36 pt</td>
+                  <td><span class="help-tag">標準 20 pt</span></td>
+                  <td><strong>相框留白</strong>：全滿版面選無邊距 (0pt)；一般文件閱讀列印選標準 (20pt)。</td>
                 </tr>
               </tbody>
             </table>
