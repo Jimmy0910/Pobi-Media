@@ -809,7 +809,7 @@ window.ApiManager = {
     };
 
     if (this.userKey) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.userKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.userKey}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -826,7 +826,7 @@ window.ApiManager = {
     const res = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...payload, model: 'gemini-2.5-flash' })
+      body: JSON.stringify({ ...payload, model: 'gemini-1.5-flash' })
     });
 
     if (res.status === 429) {

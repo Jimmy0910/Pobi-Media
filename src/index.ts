@@ -304,7 +304,7 @@ export default {
 
       try {
         const body = await request.json();
-        const model = (body as { model?: string })?.model || "gemini-2.5-flash";
+        const model = (body as { model?: string })?.model || "gemini-1.5-flash";
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
         const geminiRes = await fetch(geminiUrl, {
