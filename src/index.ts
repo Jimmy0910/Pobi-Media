@@ -4,7 +4,16 @@ interface Env {
   POBI_KV?: KVNamespace;
 }
 
-// 記憶體內簡易計數器 (Worker instance 級別防護)
+interface UserRecord {
+  id: string;
+  username: string;
+  password: string;
+  role: 'admin' | 'user';
+  createdAt: string;
+}
+
+// 記憶體內簡易備援儲存與計數器
+const memoryUserMap = new Map<string, UserRecord>();
 const ipUsageMap = new Map<string, { count: number; date: string }>();
 let globalDailyCount = 0;
 let globalDate = "";
@@ -14,6 +23,16 @@ const MAX_GLOBAL_DAILY = 200;
 
 function getTodayString(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function corsHeaders(extra: Record<string, string> = {}): HeadersInit {
+  return {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    ...extra,
+  };
 }
 
 function checkRateLimit(ip: string): { allowed: boolean; remaining: number; reason?: string } {
@@ -63,9 +82,38 @@ function recordUsage(ip: string) {
   }
 }
 
+// 雲端使用者資料操作輔助
+async function getUserFromStore(username: string, env: Env): Promise<UserRecord | null> {
+  const key = `user:${username.toLowerCase()}`;
+  if (env.POBI_KV) {
+    const data = await env.POBI_KV.get(key, "json");
+    if (data) return data as UserRecord;
+  }
+  return memoryUserMap.get(key) || null;
+}
+
+async function saveUserToStore(user: UserRecord, env: Env): Promise<void> {
+  const key = `user:${user.username.toLowerCase()}`;
+  if (env.POBI_KV) {
+    await env.POBI_KV.put(key, JSON.stringify(user));
+    // 同步更新使用者清單索引
+    let list: string[] = (await env.POBI_KV.get("user_index_list", "json")) || [];
+    if (!list.includes(user.username.toLowerCase())) {
+      list.push(user.username.toLowerCase());
+      await env.POBI_KV.put("user_index_list", JSON.stringify(list));
+    }
+  }
+  memoryUserMap.set(key, user);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    // 處理 CORS Preflight
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders() });
+    }
 
     // 處理 API 狀態檢查
     if (url.pathname === "/api/status" && request.method === "GET") {
@@ -78,13 +126,155 @@ export default {
           remainingToday: limit.remaining,
           isAvailable: limit.allowed,
         }),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-        }
+        { headers: corsHeaders() }
       );
+    }
+
+    // ==================== 跨裝置雲端帳號認證 API ====================
+    if (url.pathname === "/api/auth/register" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as { username?: string; password?: string };
+        const username = body.username?.trim();
+        const password = body.password;
+
+        if (!username || !password || password.length < 4) {
+          return new Response(
+            JSON.stringify({ success: false, error: "帳號與密碼格式不正確 (密碼需至少4字元)" }),
+            { status: 400, headers: corsHeaders() }
+          );
+        }
+
+        const existing = await getUserFromStore(username, env);
+        if (existing) {
+          return new Response(
+            JSON.stringify({ success: false, error: "此使用者名稱已被註冊，請切換至「會員登入」或更換一個未被使用的名稱" }),
+            { status: 409, headers: corsHeaders() }
+          );
+        }
+
+        const role: "admin" | "user" =
+          username.toLowerCase() === "admin" || username.toLowerCase() === "developer" ? "admin" : "user";
+        const newUser: UserRecord = {
+          id: crypto.randomUUID(),
+          username,
+          password,
+          role,
+          createdAt: new Date().toISOString(),
+        };
+
+        await saveUserToStore(newUser, env);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            user: { id: newUser.id, username: newUser.username, role: newUser.role },
+          }),
+          { headers: corsHeaders() }
+        );
+      } catch (err: any) {
+        return new Response(
+          JSON.stringify({ success: false, error: err.message || "註冊失敗" }),
+          { status: 500, headers: corsHeaders() }
+        );
+      }
+    }
+
+    if (url.pathname === "/api/auth/login" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as { username?: string; password?: string };
+        const username = body.username?.trim();
+        const password = body.password;
+
+        if (!username || !password) {
+          return new Response(
+            JSON.stringify({ success: false, error: "請輸入使用者名稱與密碼" }),
+            { status: 400, headers: corsHeaders() }
+          );
+        }
+
+        let user = await getUserFromStore(username, env);
+
+        // 若尚未在雲端資料庫中，檢查是否為預設管理員/開發者帳號並自動播種
+        if (!user) {
+          if (username.toLowerCase() === "admin" && password === "admin888") {
+            user = {
+              id: "admin-root",
+              username: "admin",
+              password: "admin888",
+              role: "admin",
+              createdAt: new Date().toISOString(),
+            };
+            await saveUserToStore(user, env);
+          } else if (username.toLowerCase() === "developer" && (password === "dev888" || password.length >= 4)) {
+            user = {
+              id: "dev-root",
+              username: "developer",
+              password: "dev888",
+              role: "admin",
+              createdAt: new Date().toISOString(),
+            };
+            await saveUserToStore(user, env);
+          }
+        }
+
+        if (!user) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "找不到此使用者名稱，請切換至「註冊新帳號」或點擊下方「一次性申請開通開發者帳號」",
+            }),
+            { status: 404, headers: corsHeaders() }
+          );
+        }
+
+        if (user.password !== password) {
+          return new Response(
+            JSON.stringify({ success: false, error: "密碼錯誤，請重新確認" }),
+            { status: 401, headers: corsHeaders() }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            user: { id: user.id, username: user.username, role: user.role || "user" },
+          }),
+          { headers: corsHeaders() }
+        );
+      } catch (err: any) {
+        return new Response(
+          JSON.stringify({ success: false, error: err.message || "登入失敗" }),
+          { status: 500, headers: corsHeaders() }
+        );
+      }
+    }
+
+    if (url.pathname === "/api/auth/dev-setup" && request.method === "POST") {
+      try {
+        let dev = await getUserFromStore("developer", env);
+        if (!dev) {
+          dev = {
+            id: "dev-root",
+            username: "developer",
+            password: "dev888",
+            role: "admin",
+            createdAt: new Date().toISOString(),
+          };
+          await saveUserToStore(dev, env);
+        }
+        return new Response(
+          JSON.stringify({
+            success: true,
+            user: { id: dev.id, username: dev.username, role: "admin" },
+          }),
+          { headers: corsHeaders() }
+        );
+      } catch (err: any) {
+        return new Response(
+          JSON.stringify({ success: false, error: err.message || "開通失敗" }),
+          { status: 500, headers: corsHeaders() }
+        );
+      }
     }
 
     // 處理 Gemini API 安全代理
@@ -96,7 +286,7 @@ export default {
             error: "NO_PUBLIC_KEY",
             message: "此站點尚未配置後端公用 API Key。請點擊右上角設定，貼上您在 Google AI Studio 申請的免費專屬 Key！",
           }),
-          { status: 503, headers: { "Content-Type": "application/json" } }
+          { status: 503, headers: corsHeaders() }
         );
       }
 
@@ -108,7 +298,7 @@ export default {
             error: "QUOTA_EXCEEDED",
             message: limit.reason,
           }),
-          { status: 429, headers: { "Content-Type": "application/json" } }
+          { status: 429, headers: corsHeaders() }
         );
       }
 
@@ -131,7 +321,7 @@ export default {
               message: `Google Gemini 伺服器回傳錯誤: ${geminiRes.status}`,
               detail: errText,
             }),
-            { status: geminiRes.status, headers: { "Content-Type": "application/json" } }
+            { status: geminiRes.status, headers: corsHeaders() }
           );
         }
 
@@ -148,17 +338,12 @@ export default {
               max: MAX_USER_DAILY,
             },
           }),
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-            },
-          }
+          { headers: corsHeaders() }
         );
       } catch (err: any) {
         return new Response(
           JSON.stringify({ error: "INTERNAL_ERROR", message: err.message || "處理請求失敗" }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
+          { status: 500, headers: corsHeaders() }
         );
       }
     }

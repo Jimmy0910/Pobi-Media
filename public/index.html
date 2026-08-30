@@ -2300,7 +2300,30 @@ window.AuthManager = {
     }
   },
 
-  setupDeveloperAccount() {
+  async setupDeveloperAccount() {
+    this.showAlert('正在開通並同步開發者管理員帳號...', 'info');
+    try {
+      const res = await fetch('/api/auth/dev-setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          this.currentUser = data.user;
+          localStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
+          this.showAlert('開發者管理員帳號 (developer) 已快速開通並雲端同步登入！', 'success');
+          setTimeout(() => {
+            this.unlockApp();
+            showToast('歡迎開發者 developer！具備完整多媒體與後台最高管理權限。', 'success');
+            if (window.AdminManager) window.AdminManager.renderUsers();
+          }, 350);
+          return;
+        }
+      }
+    } catch {}
+
+    // 本機備援
     const users = this.getUsers();
     let dev = users.find(u => u.username.toLowerCase() === 'developer');
     if (!dev) {
@@ -2340,7 +2363,7 @@ window.AuthManager = {
     box.textContent = '';
   },
 
-  handleSubmit() {
+  async handleSubmit() {
     const u = $('#authUsername')?.value.trim();
     const p = $('#authPassword')?.value;
     const remember = $('#authRemember')?.checked;
@@ -2354,55 +2377,126 @@ window.AuthManager = {
       return;
     }
 
-    const users = this.getUsers();
-
     if (this.mode === 'register') {
       const cp = $('#authConfirmPassword')?.value;
       if (p !== cp) {
         this.showAlert('兩次輸入的密碼不一致');
         return;
       }
-      if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
-        this.showAlert('此使用者名稱已被註冊，請切換至「會員登入」或更換一個未被使用的名稱');
-        return;
-      }
 
-      const role = (u.toLowerCase() === 'admin' || u.toLowerCase() === 'developer') ? 'admin' : 'user';
-      const newUser = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
-      users.push(newUser);
-      this.saveUsers(users);
+      this.showAlert('正在向雲端註冊帳號並同步...', 'info');
 
-      this.currentUser = { id: newUser.id, username: newUser.username, role: newUser.role };
-      const storage = remember ? localStorage : sessionStorage;
-      storage.setItem('pobi_session', JSON.stringify(this.currentUser));
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.user) {
+          this.currentUser = data.user;
+          const storage = remember ? localStorage : sessionStorage;
+          storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
-      this.showAlert('註冊成功，歡迎使用 Pobi Media！', 'success');
-      setTimeout(() => {
-        this.unlockApp();
-        showToast(`註冊成功，歡迎 ${newUser.username} 進入 Pobi Media 專業工作站！`, 'success');
-        if (window.AdminManager) window.AdminManager.renderUsers();
-      }, 400);
-    } else {
-      let user = users.find(x => x.username.toLowerCase() === u.toLowerCase());
-      if (user) {
-        if (user.password !== p) {
-          this.showAlert('密碼錯誤，請重新確認');
+          // 同步到本地備份
+          const users = this.getUsers();
+          if (!users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
+            users.push({ id: data.user.id, username: u, password: p, role: data.user.role, createdAt: new Date().toISOString() });
+            this.saveUsers(users);
+          }
+
+          this.showAlert('註冊成功並已同步至雲端，歡迎使用 Pobi Media！', 'success');
+          setTimeout(() => {
+            this.unlockApp();
+            showToast(`註冊成功，歡迎 ${data.user.username} 進入 Pobi Media 專業工作站！`, 'success');
+            if (window.AdminManager) window.AdminManager.renderUsers();
+          }, 400);
+          return;
+        } else {
+          this.showAlert(data.error || '註冊失敗，請重試');
           return;
         }
-      } else {
-        this.showAlert('找不到此使用者名稱，請切換至「註冊新帳號」或點擊下方「一次性申請開通開發者帳號」');
-        return;
+      } catch {
+        // 離線/本地備援註冊
+        const users = this.getUsers();
+        if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
+          this.showAlert('此使用者名稱已被註冊，請切換至「會員登入」或更換一個未被使用的名稱');
+          return;
+        }
+
+        const role = (u.toLowerCase() === 'admin' || u.toLowerCase() === 'developer') ? 'admin' : 'user';
+        const newUser = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
+        users.push(newUser);
+        this.saveUsers(users);
+
+        this.currentUser = { id: newUser.id, username: newUser.username, role: newUser.role };
+        const storage = remember ? localStorage : sessionStorage;
+        storage.setItem('pobi_session', JSON.stringify(this.currentUser));
+
+        this.showAlert('註冊成功，歡迎使用 Pobi Media！', 'success');
+        setTimeout(() => {
+          this.unlockApp();
+          showToast(`註冊成功，歡迎 ${newUser.username} 進入 Pobi Media 專業工作站！`, 'success');
+          if (window.AdminManager) window.AdminManager.renderUsers();
+        }, 400);
       }
+    } else {
+      this.showAlert('正在驗證跨裝置雲端帳號...', 'info');
 
-      this.currentUser = { id: user.id, username: user.username, role: user.role || 'user' };
-      const storage = remember ? localStorage : sessionStorage;
-      storage.setItem('pobi_session', JSON.stringify(this.currentUser));
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.user) {
+          this.currentUser = data.user;
+          const storage = remember ? localStorage : sessionStorage;
+          storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
-      this.showAlert('登入成功，正在為您載入工作台...', 'success');
-      setTimeout(() => {
-        this.unlockApp();
-        showToast(`歡迎回來，${user.username}！`, 'success');
-      }, 350);
+          // 同步到本地備份
+          const users = this.getUsers();
+          let localUser = users.find(x => x.username.toLowerCase() === u.toLowerCase());
+          if (!localUser) {
+            users.push({ id: data.user.id, username: u, password: p, role: data.user.role, createdAt: new Date().toISOString() });
+            this.saveUsers(users);
+          }
+
+          this.showAlert('登入成功，正在為您載入工作台...', 'success');
+          setTimeout(() => {
+            this.unlockApp();
+            showToast(`歡迎回來，${data.user.username}！`, 'success');
+          }, 350);
+          return;
+        } else {
+          this.showAlert(data.error || '登入失敗，請確認帳號與密碼');
+          return;
+        }
+      } catch {
+        // 離線/本地備援登入
+        const users = this.getUsers();
+        let user = users.find(x => x.username.toLowerCase() === u.toLowerCase());
+        if (user) {
+          if (user.password !== p) {
+            this.showAlert('密碼錯誤，請重新確認');
+            return;
+          }
+        } else {
+          this.showAlert('找不到此使用者名稱，請切換至「註冊新帳號」或點擊下方「一次性申請開通開發者帳號」');
+          return;
+        }
+
+        this.currentUser = { id: user.id, username: user.username, role: user.role || 'user' };
+        const storage = remember ? localStorage : sessionStorage;
+        storage.setItem('pobi_session', JSON.stringify(this.currentUser));
+
+        this.showAlert('登入成功，正在為您載入工作台...', 'success');
+        setTimeout(() => {
+          this.unlockApp();
+          showToast(`歡迎回來，${user.username}！`, 'success');
+        }, 350);
+      }
     }
   },
 
