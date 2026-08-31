@@ -20,11 +20,14 @@ export async function onRequestPost(context) {
     }
 
     const model = body.model || 'gemini-1.5-flash';
-    const geminiUrl = https://generativelanguage.googleapis.com/v1beta/models/:generateContent?key=;
+    const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
 
     const geminiRes = await fetch(geminiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
       body: JSON.stringify({
         contents: body.contents,
         generationConfig: body.generationConfig
@@ -59,7 +62,7 @@ export async function onRequestOptions() {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-goog-api-key'
     }
   });
 }

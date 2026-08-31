@@ -1,7 +1,7 @@
 ﻿// Cloudflare Pages Functions - /api/status
 export async function onRequestGet(context) {
   const { env } = context;
-  const hasPublicApi = Boolean(env.GEMINI_API_KEY && env.GEMINI_API_KEY.trim().length > 0);
+  const hasPublicApi = Boolean(env && env.GEMINI_API_KEY && env.GEMINI_API_KEY.trim().length > 0);
 
   return new Response(JSON.stringify({
     hasPublicApi,
@@ -23,7 +23,7 @@ export async function onRequestOptions() {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     }
   });
 }
