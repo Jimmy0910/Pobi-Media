@@ -2501,7 +2501,7 @@ canvas {
 
 <!-- 核心業務邏輯指令碼 -->
 <script>
-﻿(function(window, document) {
+(function(window, document) {
 'use strict';
 
 const $ = s => document.querySelector(s);
@@ -2541,13 +2541,13 @@ function canvasToBlob(canvas, type = 'image/png', quality = 0.92) {
   return new Promise(res => canvas.toBlob(res, type, quality));
 }
 
-// ==================== 頨思遢撽??董?恣? (AuthManager) ====================
+// ==================== 身份驗證與帳號管理器 (AuthManager) ====================
 window.AuthManager = {
   currentUser: null,
   mode: 'login', // 'login' | 'register'
 
   init() {
-    this.getUsers(); // 蝣箔??身蝞∠??∟???車摮董????
+    this.getUsers(); // 確保預設管理員與開發者種子帳號存在
     this.checkSession();
     this.bindEvents();
   },
@@ -2608,7 +2608,7 @@ window.AuthManager = {
     const avatarEl = $('#headerUserAvatar');
     const signoutBtn = $('#btnSignOut');
     const adminBtn = $('#btnOpenAdminModal');
-    if (nameEl) nameEl.textContent = '?芰??;
+    if (nameEl) nameEl.textContent = '未登入';
     if (avatarEl) avatarEl.textContent = '?';
     if (signoutBtn) signoutBtn.style.display = 'none';
     if (adminBtn) adminBtn.style.display = 'none';
@@ -2617,7 +2617,7 @@ window.AuthManager = {
   unlockApp() {
     const overlay = $('#authOverlay');
     if (overlay) overlay.classList.add('hidden');
-    const name = this.currentUser?.username || '?';
+    const name = this.currentUser?.username || '會員';
     const nameEl = $('#headerUserName');
     const avatarEl = $('#headerUserAvatar');
     const signoutBtn = $('#btnSignOut');
@@ -2626,7 +2626,7 @@ window.AuthManager = {
     if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
     if (signoutBtn) signoutBtn.style.display = 'block';
 
-    // ?亦蝞∠??∟??莎?憿舐內蝞∠?敺??
+    // 若為管理員角色，顯示管理後台按鈕
     if (this.currentUser?.role === 'admin') {
       if (adminBtn) adminBtn.style.display = 'inline-flex';
     } else {
@@ -2647,7 +2647,7 @@ window.AuthManager = {
         tabLogin.classList.add('active');
         tabReg.classList.remove('active');
         if (confirmRow) confirmRow.style.display = 'none';
-        if (submitBtn) submitBtn.textContent = '?餃?脣撌乩?蝡?;
+        if (submitBtn) submitBtn.textContent = '登入進入工作站';
         this.clearAlert();
       };
     }
@@ -2658,7 +2658,7 @@ window.AuthManager = {
         tabReg.classList.add('active');
         tabLogin.classList.remove('active');
         if (confirmRow) confirmRow.style.display = 'flex';
-        if (submitBtn) submitBtn.textContent = '閮餃?銝阡脣撌乩?蝡?;
+        if (submitBtn) submitBtn.textContent = '註冊並進入工作站';
         this.clearAlert();
       };
     }
@@ -2669,10 +2669,10 @@ window.AuthManager = {
         const pwd = $('#authPassword');
         if (pwd.type === 'password') {
           pwd.type = 'text';
-          togglePwd.textContent = '?梯?';
+          togglePwd.textContent = '隱藏';
         } else {
           pwd.type = 'password';
-          togglePwd.textContent = '憿舐內';
+          togglePwd.textContent = '顯示';
         }
       };
     }
@@ -2701,7 +2701,7 @@ window.AuthManager = {
   },
 
   async setupDeveloperAccount() {
-    this.showAlert('甇??蒂?郊??恣?撣唾?...', 'info');
+    this.showAlert('正在開通並同步開發者管理員帳號...', 'info');
     try {
       const res = await fetch('/api/auth/dev-setup', {
         method: 'POST',
@@ -2712,10 +2712,10 @@ window.AuthManager = {
         if (data.success && data.user) {
           this.currentUser = data.user;
           localStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
-          this.showAlert('??恣?撣唾? (developer) 撌脣翰???蒂?脩垢?郊?餃嚗?, 'success');
+          this.showAlert('開發者管理員帳號 (developer) 已快速開通並雲端同步登入！', 'success');
           setTimeout(() => {
             this.unlockApp();
-            showToast('甇∟????developer嚗???游?慦????唳?擃恣????, 'success');
+            showToast('歡迎開發者 developer！具備完整多媒體與後台最高管理權限。', 'success');
             if (window.AdminManager) window.AdminManager.renderUsers();
           }, 350);
           return;
@@ -2723,7 +2723,7 @@ window.AuthManager = {
       }
     } catch {}
 
-    // ?祆??
+    // 本機備援
     const users = this.getUsers();
     let dev = users.find(u => u.username.toLowerCase() === 'developer');
     if (!dev) {
@@ -2741,10 +2741,10 @@ window.AuthManager = {
     this.currentUser = { id: dev.id, username: dev.username, role: 'admin' };
     localStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
     
-    this.showAlert('??恣?撣唾? (developer) 撌脣翰???蒂?芸??餃嚗?, 'success');
+    this.showAlert('開發者管理員帳號 (developer) 已快速開通並自動登入！', 'success');
     setTimeout(() => {
       this.unlockApp();
-      showToast('甇∟????developer嚗???游?慦????唳?擃恣????, 'success');
+      showToast('歡迎開發者 developer！具備完整多媒體與後台最高管理權限。', 'success');
       if (window.AdminManager) window.AdminManager.renderUsers();
     }, 350);
   },
@@ -2769,22 +2769,22 @@ window.AuthManager = {
     const remember = $('#authRemember')?.checked;
 
     if (!u) {
-      this.showAlert('隢撓?乩蝙?刻?蝔?);
+      this.showAlert('請輸入使用者名稱');
       return;
     }
     if (!p || p.length < 4) {
-      this.showAlert('撖Ⅳ?瑕漲?喳?? 4 ????);
+      this.showAlert('密碼長度至少需 4 個字元');
       return;
     }
 
     if (this.mode === 'register') {
       const cp = $('#authConfirmPassword')?.value;
       if (p !== cp) {
-        this.showAlert('?拇活頛詨??蝣潔?銝??);
+        this.showAlert('兩次輸入的密碼不一致');
         return;
       }
 
-      this.showAlert('甇??蝡航酉?董?蒂?郊...', 'info');
+      this.showAlert('正在向雲端註冊帳號並同步...', 'info');
 
       try {
         const res = await fetch('/api/auth/register', {
@@ -2798,29 +2798,29 @@ window.AuthManager = {
           const storage = remember ? localStorage : sessionStorage;
           storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
-          // ?郊?唳?啣?隞?
+          // 同步到本地備份
           const users = this.getUsers();
           if (!users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
             users.push({ id: data.user.id, username: u, password: p, role: data.user.role, createdAt: new Date().toISOString() });
             this.saveUsers(users);
           }
 
-          this.showAlert('閮餃???銝血歇?郊?喲蝡荔?甇∟?雿輻 Pobi Media嚗?, 'success');
+          this.showAlert('註冊成功並已同步至雲端，歡迎使用 Pobi Media！', 'success');
           setTimeout(() => {
             this.unlockApp();
-            showToast(`閮餃???嚗迭餈?${data.user.username} ?脣 Pobi Media 撠平撌乩?蝡?`, 'success');
+            showToast(`註冊成功，歡迎 ${data.user.username} 進入 Pobi Media 專業工作站！`, 'success');
             if (window.AdminManager) window.AdminManager.renderUsers();
           }, 400);
           return;
         } else {
-          this.showAlert(data.error || '閮餃?憭望?嚗??岫');
+          this.showAlert(data.error || '註冊失敗，請重試');
           return;
         }
       } catch {
-        // ?Ｙ?/?砍?閮餃?
+        // 離線/本地備援註冊
         const users = this.getUsers();
         if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
-          this.showAlert('甇支蝙?刻?蝔勗歇鋡怨酉??隢?????∠?乓??湔?銝?鋡思蝙?函??迂');
+          this.showAlert('此使用者名稱已被註冊，請切換至「會員登入」或更換一個未被使用的名稱');
           return;
         }
 
@@ -2833,15 +2833,15 @@ window.AuthManager = {
         const storage = remember ? localStorage : sessionStorage;
         storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
-        this.showAlert('閮餃???嚗迭餈蝙??Pobi Media嚗?, 'success');
+        this.showAlert('註冊成功，歡迎使用 Pobi Media！', 'success');
         setTimeout(() => {
           this.unlockApp();
-          showToast(`閮餃???嚗迭餈?${newUser.username} ?脣 Pobi Media 撠平撌乩?蝡?`, 'success');
+          showToast(`註冊成功，歡迎 ${newUser.username} 進入 Pobi Media 專業工作站！`, 'success');
           if (window.AdminManager) window.AdminManager.renderUsers();
         }, 400);
       }
     } else {
-      this.showAlert('甇?撽?頝刻?蝵桅蝡臬董??..', 'info');
+      this.showAlert('正在驗證跨裝置雲端帳號...', 'info');
 
       try {
         const res = await fetch('/api/auth/login', {
@@ -2855,7 +2855,7 @@ window.AuthManager = {
           const storage = remember ? localStorage : sessionStorage;
           storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
-          // ?郊?唳?啣?隞?
+          // 同步到本地備份
           const users = this.getUsers();
           let localUser = users.find(x => x.username.toLowerCase() === u.toLowerCase());
           if (!localUser) {
@@ -2863,27 +2863,27 @@ window.AuthManager = {
             this.saveUsers(users);
           }
 
-          this.showAlert('?餃??嚗迤?函?刻??亙極雿...', 'success');
+          this.showAlert('登入成功，正在為您載入工作台...', 'success');
           setTimeout(() => {
             this.unlockApp();
-            showToast(`甇∟???嚗?{data.user.username}嚗, 'success');
+            showToast(`歡迎回來，${data.user.username}！`, 'success');
           }, 350);
           return;
         } else {
-          this.showAlert(data.error || '?餃憭望?嚗?蝣箄?撣唾???蝣?);
+          this.showAlert(data.error || '登入失敗，請確認帳號與密碼');
           return;
         }
       } catch {
-        // ?Ｙ?/?砍??餃
+        // 離線/本地備援登入
         const users = this.getUsers();
         let user = users.find(x => x.username.toLowerCase() === u.toLowerCase());
         if (user) {
           if (user.password !== p) {
-            this.showAlert('撖Ⅳ?航炊嚗??蝣箄?');
+            this.showAlert('密碼錯誤，請重新確認');
             return;
           }
         } else {
-          this.showAlert('?曆??唳迨雿輻??蝔梧?隢???酉?撣唾???暺?銝??甈⊥抒隢????潸董??);
+          this.showAlert('找不到此使用者名稱，請切換至「註冊新帳號」或點擊下方「一次性申請開通開發者帳號」');
           return;
         }
 
@@ -2891,10 +2891,10 @@ window.AuthManager = {
         const storage = remember ? localStorage : sessionStorage;
         storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
-        this.showAlert('?餃??嚗迤?函?刻??亙極雿...', 'success');
+        this.showAlert('登入成功，正在為您載入工作台...', 'success');
         setTimeout(() => {
           this.unlockApp();
-          showToast(`甇∟???嚗?{user.username}嚗, 'success');
+          showToast(`歡迎回來，${user.username}！`, 'success');
         }, 350);
       }
     }
@@ -2905,11 +2905,11 @@ window.AuthManager = {
     sessionStorage.removeItem('pobi_session');
     this.currentUser = null;
     this.lockApp();
-    showToast('撌脣??函??, 'info');
+    showToast('已安全登出', 'info');
   }
 };
 
-// ==================== ?典??賭蝙?刻牧????蝞∠???(HelpManager) ====================
+// ==================== 全功能使用說明與手冊管理器 (HelpManager) ====================
 window.HelpManager = {
   init() {
     const btnOpen = $('#btnOpenHelpModal');
@@ -2927,7 +2927,7 @@ window.HelpManager = {
       btnClose2.onclick = () => modal.classList.remove('active');
     }
 
-    // ??璅惜??
+    // 分頁標籤切換
     $$('.help-tab-btn').forEach(btn => {
       btn.onclick = () => {
         $$('.help-tab-btn').forEach(b => b.classList.remove('active'));
@@ -2940,7 +2940,7 @@ window.HelpManager = {
   }
 };
 
-// ==================== 雿輻??閬?擖恣? (FeedbackManager) ====================
+// ==================== 使用者意見回饋管理器 (FeedbackManager) ====================
 window.FeedbackManager = {
   init() {
     $('#btnOpenFeedbackModal').onclick = () => $('#feedbackModal').classList.add('active');
@@ -2969,10 +2969,10 @@ window.FeedbackManager = {
     const title = $('#feedbackTitle').value.trim();
     const desc = $('#feedbackDesc').value.trim();
     const contact = $('#feedbackContact').value.trim();
-    const username = window.AuthManager?.currentUser?.username || '?踹?雿輻??;
+    const username = window.AuthManager?.currentUser?.username || '匿名使用者';
 
     if (!title || !desc) {
-      showToast('隢‵撖思蜓?刻?閰喟敦?膩', 'warning');
+      showToast('請填寫主旨與詳細描述', 'warning');
       return;
     }
 
@@ -2994,18 +2994,18 @@ window.FeedbackManager = {
     $('#feedbackDesc').value = '';
     $('#feedbackContact').value = '';
     $('#feedbackModal').classList.remove('active');
-    showToast('??撌脤嚗?雓撖嗉眼?遣霅堆?', 'success');
+    showToast('回饋已送出，感謝您寶貴的建議！', 'success');
 
     if (window.AdminManager) window.AdminManager.renderFeedback();
   }
 };
 
-// ==================== 蝞∠????啁恣? (AdminManager) ====================
+// ==================== 管理者後台管理器 (AdminManager) ====================
 window.AdminManager = {
   init() {
     $('#btnOpenAdminModal').onclick = () => {
       if (window.AuthManager?.currentUser?.role !== 'admin') {
-        showToast('?函甈?摮?蝞∠??批??, 'error');
+        showToast('您無權限存取管理控制台', 'error');
         return;
       }
       this.renderUsers();
@@ -3017,7 +3017,7 @@ window.AdminManager = {
     $('#btnCloseAdminModal').onclick = () => $('#adminModal').classList.remove('active');
     $('#btnCloseAdminModal2').onclick = () => $('#adminModal').classList.remove('active');
 
-    // ?惜??
+    // 頁籤切換
     $$('.admin-tab-btn').forEach(btn => {
       btn.onclick = () => {
         $$('.admin-tab-btn').forEach(b => b.classList.remove('active'));
@@ -3028,34 +3028,34 @@ window.AdminManager = {
       };
     });
 
-    // ??雿輻??
+    // 搜尋使用者
     $('#adminUserSearch').oninput = (e) => {
       this.renderUsers(e.target.value.trim().toLowerCase());
     };
 
-    // 皜征??
+    // 清空回饋
     $('#adminClearAllFeedback').onclick = () => {
-      if (confirm('蝣箏?閬??斗??蝙?刻?擖???嚗?)) {
+      if (confirm('確定要清除所有使用者回饋記錄嗎？')) {
         localStorage.removeItem('pobi_feedback');
         this.renderFeedback();
-        showToast('撌脫?蝛箸???擖???, 'info');
+        showToast('已清空所有回饋記錄', 'info');
       }
     };
 
-    // ?祉 API ?湔
+    // 公用 API 更新
     $('#btnAdminSavePublicApi').onclick = () => {
       const key = $('#adminPublicApiKey').value.trim();
       if (!key) {
         localStorage.removeItem('pobi_public_api_override');
-        showToast('撌脫??斗璈?券??啗?撖恬?雿輻 Cloudflare Worker ?身 Secrets', 'info');
+        showToast('已清除本機公用金鑰覆寫，使用 Cloudflare Worker 預設 Secrets', 'info');
       } else {
         localStorage.setItem('pobi_public_api_override', key);
-        showToast('?祉 API ?閮剖?撌脫??, 'success');
+        showToast('公用 API 金鑰設定已更新', 'success');
       }
       window.ApiManager.checkServerStatus();
     };
 
-    // 皜祈岫 API ???
+    // 測試 API 連線
     $('#btnAdminTestApi').onclick = () => this.testApiConnection();
   },
 
@@ -3067,7 +3067,7 @@ window.AdminManager = {
   async testApiConnection() {
     const resBox = $('#adminApiTestResult');
     resBox.style.display = 'block';
-    resBox.textContent = '甇?皜祈岫 Google Gemini 2.5 Flash 蝡舫???...';
+    resBox.textContent = '正在測試 Google Gemini 2.5 Flash 端點回應...';
 
     const t0 = performance.now();
     try {
@@ -3084,14 +3084,14 @@ window.AdminManager = {
       }
       const lat = Math.round(performance.now() - t0);
       if (statusOk) {
-        resBox.textContent = `???甇?虜 (撱園: ${lat}ms) - Google Gemini 蝡舫????臬末`;
+        resBox.textContent = `連線正常 (延遲: ${lat}ms) - Google Gemini 端點運作良好`;
         resBox.style.color = '#34d399';
       } else {
-        resBox.textContent = `隡箸??冽?蔭?祉? (撱園: ${lat}ms) - 撱箄降??Cloudflare Workers 閮剖? GEMINI_API_KEY Secret`;
+        resBox.textContent = `伺服器未配置公用金鑰 (延遲: ${lat}ms) - 建議在 Cloudflare Workers 設定 GEMINI_API_KEY Secret`;
         resBox.style.color = '#fbbf24';
       }
     } catch (e) {
-      resBox.textContent = '???憭望?: ' + e.message;
+      resBox.textContent = '連線失敗: ' + e.message;
       resBox.style.color = '#f87171';
     }
   },
@@ -3105,14 +3105,14 @@ window.AdminManager = {
     tbody.innerHTML = '';
 
     if (!filtered.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:18px">?∠泵??雿輻?董??/td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:18px">無符合的使用者帳號</td></tr>';
       return;
     }
 
     filtered.forEach(u => {
       const tr = document.createElement('tr');
-      const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '?芰';
-      const roleLabel = u.role === 'admin' ? '蝞∠??? : '銝?砌蝙?刻?;
+      const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '未知';
+      const roleLabel = u.role === 'admin' ? '管理員' : '一般使用者';
       const roleClass = u.role === 'admin' ? 'admin' : 'user';
 
       tr.innerHTML = `
@@ -3120,17 +3120,17 @@ window.AdminManager = {
         <td><span class="admin-role-badge ${roleClass}">${roleLabel}</span></td>
         <td>${dateStr}</td>
         <td style="text-align:right">
-          <button class="btn-reset-pwd" style="padding:3px 8px;font-size:11px;margin-right:6px">?身撖Ⅳ</button>
-          <button class="btn-del-user btn-danger" style="padding:3px 8px;font-size:11px">?芷</button>
+          <button class="btn-reset-pwd" style="padding:3px 8px;font-size:11px;margin-right:6px">重設密碼</button>
+          <button class="btn-del-user btn-danger" style="padding:3px 8px;font-size:11px">刪除</button>
         </td>
       `;
 
-      // ??身撖Ⅳ
+      // 協助重設密碼
       tr.querySelector('.btn-reset-pwd').onclick = () => {
-        const newPwd = prompt(`隢撓?亦撣唾???{u.username}?身摰??啣?蝣潘?`, '123456');
+        const newPwd = prompt(`請輸入為帳號「${u.username}」設定的新密碼：`, '123456');
         if (newPwd !== null) {
           if (newPwd.length < 4) {
-            alert('撖Ⅳ?瑕漲??喳? 4 ????);
+            alert('密碼長度需至少 4 個字元');
             return;
           }
           const all = window.AuthManager.getUsers();
@@ -3138,23 +3138,23 @@ window.AdminManager = {
           if (target) {
             target.password = newPwd;
             window.AuthManager.saveUsers(all);
-            showToast(`撌脫????{u.username}??啣?蝣嬋, 'success');
+            showToast(`已成功為「${u.username}」更新密碼`, 'success');
           }
         }
       };
 
-      // ?芷雿輻??
+      // 刪除使用者
       tr.querySelector('.btn-del-user').onclick = () => {
         if (u.username.toLowerCase() === 'admin') {
-          alert('?⊥??芷蝟餌絞?身蝞∠??董??);
+          alert('無法刪除系統預設管理者帳號');
           return;
         }
-        if (confirm(`蝣箏?閬偶銋?支蝙?刻?{u.username}??嚗)) {
+        if (confirm(`確定要永久刪除使用者「${u.username}」嗎？`)) {
           let all = window.AuthManager.getUsers();
           all = all.filter(x => x.id !== u.id);
           window.AuthManager.saveUsers(all);
           this.renderUsers($('#adminUserSearch').value.trim().toLowerCase());
-          showToast(`撌脣?支蝙?刻?{u.username}?, 'info');
+          showToast(`已刪除使用者「${u.username}」`, 'info');
         }
       };
 
@@ -3169,14 +3169,14 @@ window.AdminManager = {
     container.innerHTML = '';
 
     if (!list.length) {
-      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:24px;font-size:12px">?桀??∩遙雿蝙?刻?擖????</div>';
+      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:24px;font-size:12px">目前無任何使用者回饋或問題回報</div>';
       return;
     }
 
     list.forEach((item, idx) => {
       const card = document.createElement('div');
       card.className = 'feedback-item';
-      const typeLabel = item.type === 'bug' ? '???' : item.type === 'feature' ? '?撱箄降' : '??隢株岷';
+      const typeLabel = item.type === 'bug' ? '問題回報' : item.type === 'feature' ? '功能建議' : '操作諮詢';
       const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleString() : '';
 
       card.innerHTML = `
@@ -3189,8 +3189,8 @@ window.AdminManager = {
         </div>
         <div class="feedback-text">${esc(item.desc)}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-secondary);border-top:1px solid rgba(255,255,255,0.05);padding-top:6px">
-          <span>?漱??<strong>${esc(item.username)}</strong> ${item.contact ? `(?舐窗嚗?{esc(item.contact)})` : ''}</span>
-          <button class="btn-del-fb btn-danger" style="padding:2px 8px;font-size:10px">璅?撌脰??蒂?芷</button>
+          <span>提交者：<strong>${esc(item.username)}</strong> ${item.contact ? `(聯絡：${esc(item.contact)})` : ''}</span>
+          <button class="btn-del-fb btn-danger" style="padding:2px 8px;font-size:10px">標記已處理並刪除</button>
         </div>
       `;
 
@@ -3199,7 +3199,7 @@ window.AdminManager = {
         all.splice(idx, 1);
         window.FeedbackManager.saveFeedback(all);
         this.renderFeedback();
-        showToast('撌脩宏?方府??擖?, 'info');
+        showToast('已移除該則回饋', 'info');
       };
 
       container.appendChild(card);
@@ -3208,7 +3208,7 @@ window.AdminManager = {
 };
 
 
-// ==================== API Key ??憿恣? ====================
+// ==================== API Key 與配額管理器 ====================
 window.ApiManager = {
   userKey: localStorage.getItem('user_gemini_api_key') || '',
   serverStatus: { hasPublicApi: false, remainingToday: 0 },
@@ -3219,29 +3219,29 @@ window.ApiManager = {
     $('#btnSaveApiKey').onclick = () => {
       const k = $('#inputUserApiKey').value.trim();
       if (!k) {
-        showToast('隢撓?交??? Gemini API Key', 'warning');
+        showToast('請輸入有效的 Gemini API Key', 'warning');
         return;
       }
       this.userKey = k;
       localStorage.setItem('user_gemini_api_key', k);
-      showToast('?芸? API Key ?脣???嚗歇??⊿??嗆芋撘?, 'success');
+      showToast('自備 API Key 儲存成功，已啟用無限制模式', 'success');
       this.updateBadge();
     };
     $('#btnClearApiKey').onclick = () => {
       this.userKey = '';
       localStorage.removeItem('user_gemini_api_key');
       $('#inputUserApiKey').value = '';
-      showToast('撌脫??方???堆????箏?券?憿芋撘?, 'info');
+      showToast('已清除自備金鑰，切換為公用配額模式', 'info');
       this.updateBadge();
     };
     $('#btnToggleKeyVisibility').onclick = () => {
       const inp = $('#inputUserApiKey');
       if (inp.type === 'password') {
         inp.type = 'text';
-        $('#btnToggleKeyVisibility').textContent = '?梯?';
+        $('#btnToggleKeyVisibility').textContent = '隱藏';
       } else {
         inp.type = 'password';
-        $('#btnToggleKeyVisibility').textContent = '憿舐內';
+        $('#btnToggleKeyVisibility').textContent = '顯示';
       }
     };
     if (this.userKey) {
@@ -3258,9 +3258,9 @@ window.ApiManager = {
         isAvailable: true
       };
       const srvKey = $('#srvKeyStatus');
-      if (srvKey) srvKey.textContent = '?祆??格?璅∪? (?臭蝙?券蝺?OCR ?撓?亙犖?)';
+      if (srvKey) srvKey.textContent = '本機單機模式 (可使用離線 OCR 或輸入個人金鑰)';
       const srvQuota = $('#srvQuotaLeft');
-      if (srvQuota) srvQuota.textContent = '?⊿???(?Ｙ?/?芸?)';
+      if (srvQuota) srvQuota.textContent = '無限制 (離線/自備)';
       this.updateBadge();
       return;
     }
@@ -3271,16 +3271,16 @@ window.ApiManager = {
       if (res.ok && ct.includes('application/json')) {
         this.serverStatus = await res.json();
         const srvKey = $('#srvKeyStatus');
-        if (srvKey) srvKey.textContent = this.serverStatus.hasPublicApi ? '撌脣???(隡箸??典停蝺?' : '?芷?蝵?(隢蝙?券蝺?OCR ?撓?亙犖?)';
+        if (srvKey) srvKey.textContent = this.serverStatus.hasPublicApi ? '已啟用 (伺服器就緒)' : '未配置 (請使用離線 OCR 或輸入個人金鑰)';
         const srvQuota = $('#srvQuotaLeft');
         if (srvQuota) srvQuota.textContent = this.serverStatus.hasPublicApi ? this.serverStatus.remainingToday : 0;
       } else {
         const srvKey = $('#srvKeyStatus');
-        if (srvKey) srvKey.textContent = '蝝?蝡舀芋撘?(隢蝙?券蝺?OCR ?票銝犖?)';
+        if (srvKey) srvKey.textContent = '純前端模式 (請使用離線 OCR 或貼上個人金鑰)';
       }
     } catch (e) {
       const srvKey = $('#srvKeyStatus');
-      if (srvKey) srvKey.textContent = '?Ｙ? / ?砍?格?璅∪?';
+      if (srvKey) srvKey.textContent = '離線 / 本地單機模式';
     }
     this.updateBadge();
   },
@@ -3291,13 +3291,13 @@ window.ApiManager = {
     if (!b || !dot) return;
 
     if (this.userKey) {
-      b.textContent = '撠惇?撌脣???;
+      b.textContent = '專屬金鑰已啟用';
       dot.className = 'status-dot blue';
     } else if (this.serverStatus.hasPublicApi) {
-      b.textContent = `?祉?拚?: ${this.serverStatus.remainingToday} 甈︶;
+      b.textContent = `公用剩餘: ${this.serverStatus.remainingToday} 次`;
       dot.className = 'status-dot green';
     } else {
-      b.textContent = '?閮剖??';
+      b.textContent = '需設定金鑰';
       dot.className = 'status-dot yellow';
     }
   },
@@ -3327,19 +3327,19 @@ window.ApiManager = {
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           const errMsg = errData.error?.message || `HTTP ${res.status}`;
-          throw new Error(`Google Gemini 摰??航炊: ${errMsg}`);
+          throw new Error(`Google Gemini 官方回傳錯誤: ${errMsg}`);
         }
         const data = await res.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       } catch (netErr) {
-        if (netErr.message.includes('Google Gemini 摰??航炊')) throw netErr;
-        throw new Error(`?????Google 摰隡箸??典仃??(${netErr.message})??瑼Ｘ蝬脰楝??API Key ?臬甇?Ⅱ?);
+        if (netErr.message.includes('Google Gemini 官方回傳錯誤')) throw netErr;
+        throw new Error(`連線至 Google 官方伺服器失敗 (${netErr.message})。請檢查網路或 API Key 是否正確。`);
       }
     }
 
     if (window.location.protocol === 'file:' || !this.serverStatus.hasPublicApi) {
       $('#apiModal')?.classList.add('active');
-      throw new Error('撠閮剖? Gemini API Key???典??箇?閬?銝剛票銝??Google Gemini API Key嚗?湔??AQ. ?韌嚗?????esseract ?Ｙ?撘??脰??祥颲刻?嚗?);
+      throw new Error('尚未設定 Gemini API Key。請在彈出的視窗中貼上您的 Google Gemini API Key（支援新版 AQ. 前綴），或切換至「Tesseract 離線引擎」進行免費辨識！');
     }
 
     try {
@@ -3352,16 +3352,16 @@ window.ApiManager = {
       const ct = res.headers.get('content-type') || '';
       if (!ct.includes('application/json')) {
         $('#apiModal')?.classList.add('active');
-        throw new Error('隡箸??典??芷?蝵桀?券??啜??刻身摰葉頛詨?函??犖 Gemini API Key嚗??湔雿輻?esseract ?祆??Ｙ? OCR??');
+        throw new Error('伺服器尚未配置公用金鑰。請在設定中輸入您的個人 Gemini API Key，或直接使用「Tesseract 本機離線 OCR」！');
       }
 
       if (res.status === 429) {
         this.checkServerStatus();
-        throw new Error('隞?祉?祥??撌脩摰?隢?喃?閫I 閮剖??撓?交?犖?');
+        throw new Error('今日公用免費配額已用完，請在右上角「AI 設定」輸入您的個人金鑰');
       }
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(err.message || 'AI 隡箸??刻??仃??);
+        throw new Error(err.message || 'AI 伺服器處理失敗');
       }
 
       const data = await res.json();
@@ -3371,10 +3371,10 @@ window.ApiManager = {
       }
       return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } catch (e) {
-      if (e.message.includes('撠閮剖?') || e.message.includes('?祉?祥??') || e.message.includes('隡箸??典??芷?蝵?)) {
+      if (e.message.includes('尚未設定') || e.message.includes('公用免費配額') || e.message.includes('伺服器尚未配置')) {
         throw e;
       }
-      throw new Error('?⊥??????AI 隞??隡箸??具遣霅圈??詨銝?頛詨?芸? Gemini API Key ?湔??? Google 摰嚗?);
+      throw new Error('無法連線至 AI 代理伺服器。建議點選右上角輸入自備 Gemini API Key 直接連線 Google 官方！');
     }
   }
 };
@@ -3399,7 +3399,7 @@ function switchTab(tabId) {
   if (btn) btn.click();
 }
 
-// ==================== 璅∠? 1: ???⊥迤?摩 ====================
+// ==================== 模組 1: 透視校正邏輯 ====================
 window.TrapezoidModule = {
   items: [],
   active: -1,
@@ -3478,7 +3478,7 @@ window.TrapezoidModule = {
           points: this.fitPoints(img.naturalWidth, img.naturalHeight)
         });
       } catch (err) {
-        console.error('頛??憭望?:', err);
+        console.error('載入圖片失敗:', err);
       }
     }
     if (this.active < 0 && this.items.length) this.active = 0;
@@ -3499,9 +3499,9 @@ window.TrapezoidModule = {
         <img class="thumb" src="${it.url}">
         <div class="meta">
           <div class="name">${esc(it.file.name)}</div>
-          <div class="desc">${it.img.naturalWidth} ? ${it.img.naturalHeight}</div>
+          <div class="desc">${it.img.naturalWidth} × ${it.img.naturalHeight}</div>
         </div>
-        <button class="btn-remove" title="蝘駁"><svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <button class="btn-remove" title="移除"><svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       `;
       div.onclick = () => { this.active = i; this.render(); };
       div.querySelector('.btn-remove').onclick = e => {
@@ -3653,7 +3653,7 @@ window.TrapezoidModule = {
     if (this.gl) return this.gl;
     this.glCanvas = document.createElement('canvas');
     this.gl = this.glCanvas.getContext('webgl', { premultipliedAlpha: false, preserveDrawingBuffer: true });
-    if (!this.gl) throw new Error('WebGL ???仃??);
+    if (!this.gl) throw new Error('WebGL 初始化失敗');
 
     const vs = `attribute vec2 a_pos; attribute vec2 a_uv; varying vec2 v_uv; void main() { gl_Position = vec4(a_pos, 0.0, 1.0); v_uv = a_uv; }`;
     const fs = `precision highp float; uniform sampler2D u_image; uniform mat3 u_H; varying vec2 v_uv; void main() { vec3 q = u_H * vec3(v_uv, 1.0); vec2 src = q.xy / q.z; if (src.x < 0.0 || src.x > 1.0 || src.y < 0.0 || src.y > 1.0) gl_FragColor = vec4(0.0); else gl_FragColor = texture2D(u_image, src); }`;
@@ -3766,15 +3766,15 @@ window.TrapezoidModule = {
     const ext = fmt === 'image/jpeg' ? 'jpg' : fmt === 'image/png' ? 'png' : 'webp';
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = it.file.name.replace(/\.[^.]+$/, '') + '-?⊥迤.' + ext;
+    a.download = it.file.name.replace(/\.[^.]+$/, '') + '-校正.' + ext;
     a.click();
-    showToast('?⊥迤敶勗?銝???', 'success');
+    showToast('校正影像下載成功', 'success');
   },
 
   async exportAllZip() {
     if (!this.items.length) return;
     const btn = $('#trapDownloadAllZip');
-    btn.disabled = true; btn.textContent = '??銝?..';
+    btn.disabled = true; btn.textContent = '打包中...';
     try {
       const zip = new JSZip();
       const fmt = $('#trapFormat').value;
@@ -3783,43 +3783,43 @@ window.TrapezoidModule = {
       const ext = targetFmt === 'image/jpeg' ? 'jpg' : targetFmt === 'image/png' ? 'png' : 'webp';
       for (let i = 0; i < this.items.length; i++) {
         const it = this.items[i];
-        btn.textContent = `????銝?(${i+1}/${this.items.length})...`;
+        btn.textContent = `打包處理中 (${i+1}/${this.items.length})...`;
         const c = await this.getWarpedCanvas(it);
         const b = await canvasToBlob(c, targetFmt, q);
-        zip.file(it.file.name.replace(/\.[^.]+$/, '') + '-?⊥迤.' + ext, b);
+        zip.file(it.file.name.replace(/\.[^.]+$/, '') + '-校正.' + ext, b);
       }
       const blob = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `?⊥迤?寞活_${new Date().toISOString().slice(0,10)}.zip`;
+      a.download = `校正批次_${new Date().toISOString().slice(0,10)}.zip`;
       a.click();
-      showToast('ZIP ??銝?摰?', 'success');
+      showToast('ZIP 打包下載完成', 'success');
     } catch (e) {
-      showToast('??憭望?: ' + e.message, 'error');
+      showToast('打包失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '?寞活??銝? (ZIP)';
+      btn.disabled = false; btn.textContent = '批次打包下載 (ZIP)';
     }
   },
 
   async exportAsPdf(items) {
     if (!items || !items.length) {
-      showToast('隢??銝阡????, 'warning');
+      showToast('請先加入並選擇圖片', 'warning');
       return;
     }
     const btn = $('#trapExportPdf') || $('#trapDownloadCurrent');
     const origText = btn ? btn.textContent : '';
-    if (btn) { btn.disabled = true; btn.textContent = '?? PDF 銝?..'; }
+    if (btn) { btn.disabled = true; btn.textContent = '合成 PDF 中...'; }
 
     try {
       if (typeof PDFLib === 'undefined') {
-        throw new Error('PDF ???賢?摨怠??芾??亙???);
+        throw new Error('PDF 處理函式庫尚未載入完成');
       }
       const pdfDoc = await PDFLib.PDFDocument.create();
       const q = Number($('#trapQuality').value) || 0.92;
 
       for (let i = 0; i < items.length; i++) {
         const it = items[i];
-        if (btn) btn.textContent = `??蝚?${i+1}/${items.length} ??..`;
+        if (btn) btn.textContent = `處理第 ${i+1}/${items.length} 頁...`;
         const c = await this.getWarpedCanvas(it);
         const b = await canvasToBlob(c, 'image/jpeg', q);
         const embedded = await pdfDoc.embedJpg(await b.arrayBuffer());
@@ -3837,44 +3837,44 @@ window.TrapezoidModule = {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       const filename = items.length === 1
-        ? items[0].file.name.replace(/\.[^.]+$/, '') + '-?⊥迤.pdf'
-        : `PobiMedia_?⊥迤憭??辣_${new Date().toISOString().slice(0,10)}.pdf`;
+        ? items[0].file.name.replace(/\.[^.]+$/, '') + '-校正.pdf'
+        : `PobiMedia_校正多頁文件_${new Date().toISOString().slice(0,10)}.pdf`;
       a.download = filename;
       a.click();
-      showToast('PDF ?臬銝???', 'success');
+      showToast('PDF 匯出下載成功', 'success');
     } catch (e) {
       console.error(e);
-      showToast('PDF ?臬憭望?: ' + e.message, 'error');
+      showToast('PDF 匯出失敗: ' + e.message, 'error');
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = origText || '?寞活?蔥?臬?箏???PDF'; }
+      if (btn) { btn.disabled = false; btn.textContent = origText || '批次合併匯出為多頁 PDF'; }
     }
   },
 
   async sendToModule(mod) {
     const it = this.items[this.active];
-    if (!it) { showToast('隢??豢???', 'warning'); return; }
+    if (!it) { showToast('請先選擇圖片', 'warning'); return; }
     const canvas = await this.getWarpedCanvas(it);
     const blob = await canvasToBlob(canvas, 'image/png');
-    const file = new File([blob], it.file.name.replace(/\.[^.]+$/, '') + '-?⊥迤.png', { type: 'image/png' });
+    const file = new File([blob], it.file.name.replace(/\.[^.]+$/, '') + '-校正.png', { type: 'image/png' });
 
     if (mod === 'bgremove') {
       window.BgRemoveModule.loadFile(file);
       switchTab('bgremove');
-      showToast('撌脣?甇?蔣???駁', 'success');
+      showToast('已傳送校正影像至背景去除', 'success');
     } else if (mod === 'ocr') {
       window.OcrModule.loadFile(file);
       switchTab('ocr');
-      showToast('撌脣?甇?蔣???颲刻?', 'success');
+      showToast('已傳送校正影像至文字辨識', 'success');
     } else if (mod === 'convert') {
       window.ConvertModule.addFiles([file]);
       switchTab('convert');
-      showToast('撌脣???PDF 頧???????, 'success');
+      showToast('已加入 PDF 轉檔與合成清單', 'success');
     }
   }
 };
 
 
-// ==================== 璅∠? 2: ?澆?頧? & PDF ????====================
+// ==================== 模組 2: 格式轉檔 & PDF 合成器 ====================
 window.ConvertModule = {
   files: [],
 
@@ -3913,7 +3913,7 @@ window.ConvertModule = {
           <div class="name">${esc(it.file.name)}</div>
           <div class="desc">${(it.file.size / 1024).toFixed(1)} KB</div>
         </div>
-        <button class="btn-remove" title="蝘駁"><svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <button class="btn-remove" title="移除"><svg class="icon" viewBox="0 0 24 24" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       `;
       div.querySelector('.btn-remove').onclick = () => {
         this.files.splice(i, 1);
@@ -3924,13 +3924,13 @@ window.ConvertModule = {
   },
 
   async buildPdf() {
-    if (!this.files.length) { showToast('隢?銝瑼?', 'warning'); return; }
+    if (!this.files.length) { showToast('請先上傳檔案', 'warning'); return; }
     const btn = $('#btnBuildPdf');
-    btn.disabled = true; btn.textContent = '?? PDF 銝?..';
+    btn.disabled = true; btn.textContent = '合成 PDF 中...';
 
     try {
       if (typeof PDFLib === 'undefined') {
-        throw new Error('PDF ???賢?摨怠??芾??亙???隢???閰?);
+        throw new Error('PDF 處理函式庫尚未載入完成，請稍候重試');
       }
       const pdfDoc = await PDFLib.PDFDocument.create();
       const layout = $('#pdfPageLayout').value;
@@ -3938,7 +3938,7 @@ window.ConvertModule = {
 
       for (let i = 0; i < this.files.length; i++) {
         const it = this.files[i];
-        btn.textContent = `??蝚?${i+1}/${this.files.length} ??..`;
+        btn.textContent = `處理第 ${i+1}/${this.files.length} 頁...`;
 
         let imgCanvas = null;
 
@@ -3998,19 +3998,19 @@ window.ConvertModule = {
       a.href = URL.createObjectURL(blob);
       a.download = $('#pdfFilename').value || 'PobiMedia_Doc.pdf';
       a.click();
-      showToast('PDF ??銝???', 'success');
+      showToast('PDF 合成下載成功', 'success');
     } catch (e) {
       console.error(e);
-      showToast('PDF ?Ｙ?憭望?: ' + e.message, 'error');
+      showToast('PDF 產生失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '??銝虫?頛?PDF ?辣';
+      btn.disabled = false; btn.textContent = '合成並下載 PDF 文件';
     }
   },
 
   async batchConvertImages() {
-    if (!this.files.length) { showToast('隢?銝??', 'warning'); return; }
+    if (!this.files.length) { showToast('請先上傳圖片', 'warning'); return; }
     const btn = $('#btnBatchConvert');
-    btn.disabled = true; btn.textContent = '頧?銝?..';
+    btn.disabled = true; btn.textContent = '轉檔中...';
     try {
       const zip = new JSZip();
       const fmt = $('#convTargetFormat').value, q = Number($('#convQuality').value);
@@ -4029,19 +4029,19 @@ window.ConvertModule = {
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(zipBlob);
-      a.download = `頧??寞活_${new Date().toISOString().slice(0,10)}.zip`;
+      a.download = `轉檔批次_${new Date().toISOString().slice(0,10)}.zip`;
       a.click();
-      showToast('?寞活頧? ZIP 銝?摰?', 'success');
+      showToast('批次轉檔 ZIP 下載完成', 'success');
     } catch (e) {
-      showToast('頧?憭望?: ' + e.message, 'error');
+      showToast('轉檔失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '?寞活頧?銝虫?頛?ZIP 憯葬??;
+      btn.disabled = false; btn.textContent = '批次轉換並下載 ZIP 壓縮包';
     }
   }
 };
 
 
-// ==================== 璅∠? 3: PDF ????====================
+// ==================== 模組 3: PDF 頁面分割器 ====================
 window.PdfSplitModule = {
   pdfDoc: null,
   pdfBytes: null,
@@ -4067,7 +4067,7 @@ window.PdfSplitModule = {
     $('#splitPrevPage').onclick = () => { if (this.currentPage > 1) { this.currentPage--; this.renderPage(); } };
     $('#splitNextPage').onclick = () => { if (this.currentPage < this.totalPages) { this.currentPage++; this.renderPage(); } };
 
-    $('#splitApplyAll').onclick = () => showToast('撌脣??典??脩?閮剖??單?????, 'success');
+    $('#splitApplyAll').onclick = () => showToast('已套用切割線設定至所有頁面', 'success');
     $('#btnExportSplitPdf').onclick = () => this.exportSplitPdf();
 
     this.initCutOverlay();
@@ -4086,20 +4086,20 @@ window.PdfSplitModule = {
       this.pdfDoc = await pdfjsLib.getDocument({ data: this.pdfBytes }).promise;
       this.totalPages = this.pdfDoc.numPages;
       this.currentPage = 1;
-      $('#splitPageCount').textContent = `${this.totalPages} ?;
+      $('#splitPageCount').textContent = `${this.totalPages} 頁`;
       $('#btnExportSplitPdf').disabled = false;
       $('#splitEmptyHint').style.display = 'none';
       $('#splitCanvasWrap').style.display = 'block';
       this.renderPage();
-      showToast(`撌脰???PDF ?辣嚗 ${this.totalPages} ?, 'success');
+      showToast(`已載入 PDF 文件，共 ${this.totalPages} 頁`, 'success');
     } catch (e) {
-      showToast('頛 PDF 憭望?: ' + e.message, 'error');
+      showToast('載入 PDF 失敗: ' + e.message, 'error');
     }
   },
 
   async renderPage() {
     if (!this.pdfDoc) return;
-    $('#splitPageIndicator').textContent = `蝚?${this.currentPage} / ${this.totalPages} ?;
+    $('#splitPageIndicator').textContent = `第 ${this.currentPage} / ${this.totalPages} 頁`;
     const page = await this.pdfDoc.getPage(this.currentPage);
     const viewport = page.getViewport({ scale: 1.5 });
 
@@ -4181,11 +4181,11 @@ window.PdfSplitModule = {
   async exportSplitPdf() {
     if (!this.pdfBytes || !this.pdfDoc) return;
     const btn = $('#btnExportSplitPdf');
-    btn.disabled = true; btn.textContent = '?????PDF 銝?..';
+    btn.disabled = true; btn.textContent = '分割生成新 PDF 中...';
 
     try {
       if (typeof PDFLib === 'undefined') {
-        throw new Error('PDF ???賢?摨怠??芾??亙???);
+        throw new Error('PDF 處理函式庫尚未載入完成');
       }
       const outDoc = await PDFLib.PDFDocument.create();
       const dir = $('#splitDirection').value;
@@ -4193,7 +4193,7 @@ window.PdfSplitModule = {
       const total = this.pdfDoc.numPages;
 
       for (let i = 1; i <= total; i++) {
-        btn.textContent = `??蝚?${i}/${total} ??..`;
+        btn.textContent = `處理第 ${i}/${total} 頁...`;
         const page = await this.pdfDoc.getPage(i);
         const viewport = page.getViewport({ scale: 2.0 }); // 2x resolution
         const c = document.createElement('canvas');
@@ -4258,20 +4258,20 @@ window.PdfSplitModule = {
       const blob = new Blob([outBytes], { type: 'application/pdf' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `?摰?_??{outDoc.getPageCount()}??pdf`;
+      a.download = `分割完成_共${outDoc.getPageCount()}頁.pdf`;
       a.click();
-      showToast(`PDF ???嚗?Ｙ? ${outDoc.getPageCount()} ??隞跆, 'success');
+      showToast(`PDF 分割成功，共產生 ${outDoc.getPageCount()} 頁文件`, 'success');
     } catch (e) {
       console.error(e);
-      showToast('??臬憭望?: ' + e.message, 'error');
+      showToast('分割匯出失敗: ' + e.message, 'error');
     } finally {
-      btn.disabled = false; btn.textContent = '?銝血?箸 PDF';
+      btn.disabled = false; btn.textContent = '分割並匯出新 PDF';
     }
   }
 };
 
 
-// ==================== 璅∠? 4: ??颲刻? OCR ====================
+// ==================== 模組 4: 文字辨識 OCR ====================
 window.OcrModule = {
   currentImg: null,
   cropRect: null,
@@ -4296,9 +4296,9 @@ window.OcrModule = {
     $('#btnStartOcr').onclick = () => this.runOcr();
     $('#btnCopyOcrText').onclick = () => {
       const txt = $('#ocrResultText').value;
-      if (!txt) { showToast('颲刻?蝯??箇征', 'warning'); return; }
+      if (!txt) { showToast('辨識結果為空', 'warning'); return; }
       navigator.clipboard.writeText(txt);
-      showToast('??撌脰?鋆質?芾票蝪?, 'success');
+      showToast('文字已複製至剪貼簿', 'success');
     };
     $('#btnSaveOcrTxt').onclick = () => this.saveText('txt');
     $('#btnSaveOcrMd').onclick = () => this.saveText('md');
@@ -4315,25 +4315,25 @@ window.OcrModule = {
 
     ctx.fillStyle = '#0f172a';
     ctx.font = 'bold 24px sans-serif';
-    ctx.fillText('?餃??潛巨霅???/ ?嗆?皜祈岫璅?撐', 40, 50);
+    ctx.fillText('電子發票證明聯 / 收據測試樣張', 40, 50);
 
     ctx.font = '18px monospace';
     ctx.fillStyle = '#334155';
-    ctx.fillText('?潛巨?Ⅳ: AB-99882233', 40, 90);
-    ctx.fillText('???交?: 2026-08-30 12:00:00', 40, 120);
-    ctx.fillText('??閬              ?賊?    ?桀    ??', 40, 160);
+    ctx.fillText('發票號碼: AB-99882233', 40, 90);
+    ctx.fillText('開立日期: 2026-08-30 12:00:00', 40, 120);
+    ctx.fillText('品名規格              數量    單價    金額', 40, 160);
     ctx.fillText('------------------------------------------', 40, 185);
-    ctx.fillText('?輸? (憭扳/??      2     $120   $240', 40, 215);
-    ctx.fillText('瘜??舫?暻萄?            1      $65    $65', 40, 245);
+    ctx.fillText('拿鐵咖啡 (大杯/冰)      2     $120   $240', 40, 215);
+    ctx.fillText('法式可頌麵包            1      $65    $65', 40, 245);
     ctx.fillText('------------------------------------------', 40, 275);
     ctx.fillStyle = '#1e3a8a';
     ctx.font = 'bold 20px sans-serif';
-    ctx.fillText('??蝮賡?: NT$ 305 ??, 40, 315);
+    ctx.fillText('應付總額: NT$ 305 元', 40, 315);
 
     c.toBlob(blob => {
-      const file = new File([blob], '?潛巨?嗆?皜祈岫璅?撐.png', { type: 'image/png' });
+      const file = new File([blob], '發票收據測試樣張.png', { type: 'image/png' });
       this.loadFile(file);
-      showToast('撌脰??亦蟡冽?葫閰衣?靘?', 'success');
+      showToast('已載入發票收據測試範例圖', 'success');
     }, 'image/png');
   },
 
@@ -4346,9 +4346,9 @@ window.OcrModule = {
       $('#ocrCanvasWrap').style.display = 'block';
       this.cropRect = null;
       this.drawCanvas();
-      showToast('??撌脰??伐??舫???憪?摮儘霅?, 'success');
+      showToast('圖片已載入，可點擊「開始文字辨識」', 'success');
     } catch (e) {
-      showToast('頛??憭望?: ' + e.message, 'error');
+      showToast('載入圖片失敗: ' + e.message, 'error');
     }
   },
 
@@ -4441,7 +4441,7 @@ window.OcrModule = {
       }
 
       if (engine === 'tesseract') {
-        $('#ocrProgressLabel').textContent = '頛 Tesseract ?Ｙ?撘?...';
+        $('#ocrProgressLabel').textContent = '載入 Tesseract 離線引擎...';
         const lang = $('#ocrLanguage').value || 'chi_tra';
 
         const worker = await Tesseract.createWorker(lang, 1, {
@@ -4450,9 +4450,9 @@ window.OcrModule = {
               const p = Math.round((m.progress || 0) * 100);
               $('#ocrProgressBar').style.width = p + '%';
               $('#ocrProgressVal').textContent = p + '%';
-              $('#ocrProgressLabel').textContent = `??颲刻?銝?(${p}%)...`;
+              $('#ocrProgressLabel').textContent = `文字辨識中 (${p}%)...`;
             } else {
-              $('#ocrProgressLabel').textContent = m.status || '??銝?..';
+              $('#ocrProgressLabel').textContent = m.status || '處理中...';
             }
           }
         });
@@ -4462,24 +4462,24 @@ window.OcrModule = {
         $('#ocrResultText').value = ret.data.text.trim();
         $('#ocrProgressBar').style.width = '100%';
         $('#ocrProgressVal').textContent = '100%';
-        showToast('Tesseract ?砍?Ｙ?颲刻?摰?', 'success');
+        showToast('Tesseract 本地離線辨識完成', 'success');
       } else {
-        $('#ocrProgressLabel').textContent = 'Google Gemini AI ?箸????銝?..';
+        $('#ocrProgressLabel').textContent = 'Google Gemini AI 智慧排版分析中...';
         $('#ocrProgressBar').style.width = '45%';
         $('#ocrProgressVal').textContent = '45%';
 
         const b64 = c.toDataURL('image/png').split(',')[1];
-        const prompt = '隢誑蝝?摮撘??湔??撐??銝剔????摮?靽???畾菔???????交銵冽隢?? Markdown 銵冽?澆?嚗??輸?憭溶?牧?誥閰梧??撓?箸????摮摰嫘?;
+        const prompt = '請以純文字格式完整提取這張圖片中的所有文字。請保留原始段落換行與排版，若是表格請轉換為 Markdown 表格格式，請勿額外添加說明廢話，僅輸出提取到的文字內容。';
 
         const text = await ApiManager.callGeminiVision(b64, prompt);
         $('#ocrResultText').value = text.trim();
         $('#ocrProgressBar').style.width = '100%';
         $('#ocrProgressVal').textContent = '100%';
-        showToast('Gemini AI 颲刻?摰?', 'success');
+        showToast('Gemini AI 辨識完成', 'success');
       }
     } catch (e) {
       console.error(e);
-      showToast('OCR 颲刻?憭望?: ' + e.message, 'error');
+      showToast('OCR 辨識失敗: ' + e.message, 'error');
     } finally {
       btn.disabled = false;
       setTimeout(() => {
@@ -4491,18 +4491,18 @@ window.OcrModule = {
 
   saveText(ext) {
     const txt = $('#ocrResultText').value;
-    if (!txt) { showToast('颲刻?蝯??箇征', 'warning'); return; }
+    if (!txt) { showToast('辨識結果為空', 'warning'); return; }
     const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `OCR_??蝯?_${new Date().toISOString().slice(0,10)}.${ext}`;
+    a.download = `OCR_提取結果_${new Date().toISOString().slice(0,10)}.${ext}`;
     a.click();
-    showToast(`撌脖?頛?.${ext} 瑼?`, 'success');
+    showToast(`已下載 .${ext} 檔案`, 'success');
   }
 };
 
 
-// ==================== 璅∠? 5: ??駁 ====================
+// ==================== 模組 5: 背景去除 ====================
 window.BgRemoveModule = {
   currentImg: null,
   rawCanvas: null,
@@ -4584,13 +4584,13 @@ window.BgRemoveModule = {
     ctx.textAlign = 'center';
     ctx.fillText('POBI MEDIA', 250, 220);
     ctx.font = 'bold 24px sans-serif';
-    ctx.fillText('撖拇?? 繚 撠平隤?', 250, 275);
-    ctx.fillText('??????????, 250, 315);
+    ctx.fillText('審核通過 · 專業認證', 250, 275);
+    ctx.fillText('★ ★ ★ ★ ★', 250, 315);
 
     c.toBlob(blob => {
-      const file = new File([blob], '?啁??圈??餉?璅?撐.png', { type: 'image/png' });
+      const file = new File([blob], '印章印鑑去背樣張.png', { type: 'image/png' });
       this.loadFile(file);
-      showToast('撌脰??亙?葫閰衣?靘?', 'success');
+      showToast('已載入去背測試範例圖', 'success');
     }, 'image/png');
   },
 
@@ -4619,9 +4619,9 @@ window.BgRemoveModule = {
       $('#bgCanvasWrap').style.display = 'block';
 
       this.updateDisplay();
-      showToast('??撌脰??伐?暺???萄銵?批??暺???脰?擳?璉??, 'success');
+      showToast('圖片已載入，點選「一鍵執行智慧去背」或點擊背景進行魔術棒去背', 'success');
     } catch (e) {
-      showToast('頛??憭望?: ' + e.message, 'error');
+      showToast('載入圖片失敗: ' + e.message, 'error');
     }
   },
 
@@ -4631,7 +4631,7 @@ window.BgRemoveModule = {
     ctx.clearRect(0, 0, this.resultCanvas.width, this.resultCanvas.height);
     ctx.drawImage(this.rawCanvas, 0, 0);
     this.updateDisplay();
-    showToast('撌脤??????', 'info');
+    showToast('已還原為原始圖片', 'info');
   },
 
   updateDisplay() {
@@ -4738,13 +4738,13 @@ window.BgRemoveModule = {
       this.brushMode = 'none';
       $('#bgBrushErase')?.classList.remove('active');
       $('#bgBrushRestore')?.classList.remove('active');
-      showToast('撌脣??擳?璉??豢芋撘?暺?隞颱????湔?駁嚗?, 'info');
+      showToast('已切換為魔術棒點選模式（點擊任何背景處可直接去除）', 'info');
     } else {
       this.brushMode = mode;
       $('#bgBrushErase')?.classList.toggle('active', mode === 'erase');
       $('#bgBrushRestore')?.classList.toggle('active', mode === 'restore');
-      const label = mode === 'erase' ? '?阡?蝑 (?憛)' : '靽?銝駁?蝑 (?靽株?)';
-      showToast('蝑??嚗? + label, 'info');
+      const label = mode === 'erase' ? '擦除背景筆刷 (拖曳塗抹)' : '保留主體筆刷 (拖曳修補)';
+      showToast('筆刷切換：' + label, 'info');
     }
   },
 
@@ -4811,7 +4811,7 @@ window.BgRemoveModule = {
     ctx.putImageData(imgData, 0, 0);
 
     this.updateDisplay();
-    showToast('暺??歇皜', 'success');
+    showToast('點選區域已清除', 'success');
   },
 
   autoRemoveWhite() {
@@ -4839,7 +4839,7 @@ window.BgRemoveModule = {
     ctx.putImageData(imgData, 0, 0);
 
     this.updateDisplay();
-    showToast('蝝?撌脫???, 'success');
+    showToast('純白背景已清除', 'success');
   },
 
   smartAutoEdgeBgRemove() {
@@ -4949,10 +4949,10 @@ window.BgRemoveModule = {
     if (!this.resultCanvas) return;
     const btn = $('#btnRunBgRemove');
     btn.disabled = true;
-    btn.textContent = 'AI 瘛勗漲???餉?銝?..';
+    btn.textContent = 'AI 深度分析去背中...';
 
     try {
-      showToast('甇??? Gemini 瘛勗漲閬死璅∪???銝駁???...', 'info');
+      showToast('正在透過 Gemini 深度視覺模型分析主體邊界...', 'info');
 
       // Attempt AI Vision call if API key / server is ready
       let aiResult = null;
@@ -4972,13 +4972,13 @@ window.BgRemoveModule = {
 
       // Execute precision background extraction
       this.smartAutoEdgeBgRemove();
-      showToast('AI ?箸?餉?摰?嚗?臭蝙?函??瑚耨鋆??湔銝?', 'success');
+      showToast('AI 智慧去背完成！您可使用筆刷修補或直接下載', 'success');
     } catch (e) {
       console.error(e);
-      showToast('?餉????啣虜: ' + e.message, 'error');
+      showToast('去背處理異常: ' + e.message, 'error');
     } finally {
       btn.disabled = false;
-      btn.textContent = '?? AI ?箸?餉?';
+      btn.textContent = '開始 AI 智慧去背';
     }
   },
 
@@ -4999,24 +4999,24 @@ window.BgRemoveModule = {
     const blob = await canvasToBlob(c, fmt, 0.95);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `?餉?蝯?_${new Date().toISOString().slice(0,10)}.${type}`;
+    a.download = `去背結果_${new Date().toISOString().slice(0,10)}.${type}`;
     a.click();
-    showToast(type.toUpperCase() + ' 瑼?銝???', 'success');
+    showToast(type.toUpperCase() + ' 檔案下載成功', 'success');
   },
 
   async sendToModule(mod) {
     if (!this.resultCanvas) return;
     const blob = await canvasToBlob(this.resultCanvas, 'image/png');
-    const file = new File([blob], '?餉?銝駁?.png', { type: 'image/png' });
+    const file = new File([blob], '去背主體.png', { type: 'image/png' });
 
     if (mod === 'ocr') {
       window.OcrModule.loadFile(file);
       switchTab('ocr');
-      showToast('撌脣??蔣???颲刻?', 'success');
+      showToast('已傳送去背影像至文字辨識', 'success');
     } else if (mod === 'convert') {
       window.ConvertModule.addFiles([file]);
       switchTab('convert');
-      showToast('撌脣???PDF 頧???????, 'success');
+      showToast('已加入 PDF 轉檔與合成清單', 'success');
     }
   }
 };
@@ -5041,7 +5041,6 @@ if (document.readyState === 'loading') {
 }
 
 })(window, document);
-
 
 </script>
 </body>
