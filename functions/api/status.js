@@ -1,6 +1,6 @@
 ﻿// Cloudflare Pages Functions - /api/status
 export async function onRequestGet(context) {
-  const { env } = context;
+  const { request, env } = context;
   const rawKey = env ? (env.GEMINI_API_KEY || (typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY : '')) : '';
   const hasPublicApi = Boolean(rawKey && String(rawKey).trim().length > 0);
 

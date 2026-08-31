@@ -390,31 +390,6 @@
           </div>
           <div class="config-row">
             <label>閱讀順序</label>
-            <select id="splitOrder">
-              <option value="ltr">由左至右 (左頁優先)</option>
-              <option value="rtl">由右至左 (日文書籍 / 漫畫)</option>
-            </select>
-          </div>
-          <div class="config-row">
-            <label>分割位置</label>
-            <input type="range" id="splitRatio" min="10" max="90" value="50">
-            <span id="splitRatioVal" style="font-size:11px;width:32px;text-align:right;font-family:var(--font-mono)">50%</span>
-          </div>
-          <button id="splitApplyAll" style="width:100%;font-size:11px">套用至所有頁面</button>
-        </div>
-
-        <button id="btnExportSplitPdf" class="btn-primary" style="width:100%;padding:10px;font-size:13px" disabled>
-          分割並匯出新 PDF
-        </button>
-      </aside>
-
-      <!-- 右側預覽畫布 -->
-      <main class="stage">
-        <div class="stage-toolbar">
-          <button id="splitPrevPage">上一頁</button>
-          <span id="splitPageIndicator" style="font-size:12px;font-weight:600;color:var(--text-primary);font-family:var(--font-mono)">第 0 / 0 頁</span>
-          <button id="splitNextPage">下一頁</button>
-          <div style="flex:1"></div>
           <span style="font-size:11px;color:var(--text-muted)">可直接在預覽圖上拖曳紅色虛線</span>
         </div>
         <div class="stage-canvas-area" id="splitStageArea">
@@ -450,7 +425,7 @@
           <div class="drop-zone-desc">JPG, PNG, WebP</div>
           <input type="file" id="ocrFileIn" accept="image/*">
         </div>
-        <button id="btnLoadOcrSample" style="width:100%;font-size:11px;margin-top:6px">載入測試範例圖 (發票/單據)</button>
+        
 
         <div class="config-group" style="margin-top:12px">
           <div class="config-group-title">辨識引擎設定</div>
@@ -479,6 +454,7 @@
           </div>
         </div>
 
+        <button id="btnClearOcr" style="width:100%;margin-bottom:8px;background:var(--card-bg);border:1px solid var(--border-color);color:var(--text-muted);font-size:12px;cursor:pointer;padding:6px;border-radius:6px">清除圖片與結果</button>
         <button id="btnStartOcr" class="btn-primary" style="width:100%;padding:10px;font-size:13px;margin-top:10px" disabled>
           開始文字辨識
         </button>
@@ -510,7 +486,7 @@
                 <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
               </svg>
             </div>
-            請上傳圖片或點擊「載入測試範例圖」開始文字辨識
+            請上傳圖片開始文字辨識
           </div>
           <div id="ocrCanvasWrap" style="position:relative;display:none">
             <canvas id="ocrImgCanvas"></canvas>
@@ -548,14 +524,15 @@
           <div class="drop-zone-desc">人像、物件、簽名印章</div>
           <input type="file" id="bgFileIn" accept="image/*">
         </div>
-        <button id="btnLoadBgSample" style="width:100%;font-size:11px;margin-top:6px">載入測試範例圖 (商品照/印章)</button>
+        
 
         <div class="config-group" style="margin-top:12px">
           <div class="config-group-title">AI 智慧主體去背</div>
           <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px">
             使用 Gemini 多模態視覺模型精準辨識主體輪廓（人物、商品、公文印鑑），全自動分離背景。
           </div>
-          <button id="btnRunBgRemove" class="btn-primary" style="width:100%;padding:10px;font-weight:600" disabled>
+          <button id="btnClearBgRemove" style="width:100%;margin-bottom:8px;background:var(--card-bg);border:1px solid var(--border-color);color:var(--text-muted);font-size:12px;cursor:pointer;padding:6px;border-radius:6px">清除圖片 / 重設</button>
+        <button id="btnRunBgRemove" class="btn-primary" style="width:100%;padding:10px;font-weight:600" disabled>
             開始 AI 智慧去背
           </button>
           <button id="btnResetBg" style="width:100%;font-size:11px;margin-top:4px" disabled>
@@ -593,7 +570,7 @@
                 <polygon points="19,13 25,17.5 19,22" fill="#60a5fa"/>
               </svg>
             </div>
-            請上傳圖片或點擊「載入測試範例圖」開始去背處理
+            請上傳圖片開始去背處理
           </div>
           <div id="bgCanvasWrap" class="canvas-checkerboard" style="position:relative;display:none">
             <canvas id="bgResultCanvas"></canvas>

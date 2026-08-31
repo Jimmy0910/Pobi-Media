@@ -4,6 +4,14 @@
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
+window.resetAllModules = function() {
+  if (window.TrapezoidModule && window.TrapezoidModule.clear) window.TrapezoidModule.clear();
+  if (window.ConvertModule && window.ConvertModule.clear) window.ConvertModule.clear();
+  if (window.PdfSplitModule && window.PdfSplitModule.clear) window.PdfSplitModule.clear();
+  if (window.OcrModule && window.OcrModule.clear) window.OcrModule.clear();
+  if (window.BgRemoveModule && window.BgRemoveModule.clear) window.BgRemoveModule.clear();
+};
+
 function showToast(msg, type = 'info') {
   const c = $('#toastContainer');
   if (!c) return;
@@ -52,7 +60,15 @@ window.AuthManager = {
   getUsers() {
     try {
       let users = JSON.parse(localStorage.getItem('pobi_users') || '[]');
-      let updated = false;
+      // 確保跨裝置、本機與雲端唯一：全系統僅存在唯一 developer 與 admin 帳號
+      const seen = new Set();
+      users = users.filter(u => {
+        const uname = (u.username || '').toLowerCase();
+        if (seen.has(uname)) return false;
+        seen.add(uname);
+        return true;
+      });
+
       if (!users.some(u => u.username.toLowerCase() === 'admin')) {
         users.unshift({
           id: 'admin-root',
@@ -61,7 +77,6 @@ window.AuthManager = {
           role: 'admin',
           createdAt: new Date().toISOString()
         });
-        updated = true;
       }
       if (!users.some(u => u.username.toLowerCase() === 'developer')) {
         users.push({
@@ -71,11 +86,8 @@ window.AuthManager = {
           role: 'admin',
           createdAt: new Date().toISOString()
         });
-        updated = true;
       }
-      if (updated) {
-        localStorage.setItem('pobi_users', JSON.stringify(users));
-      }
+      localStorage.setItem('pobi_users', JSON.stringify(users));
       return users;
     } catch {
       return [];
@@ -99,6 +111,7 @@ window.AuthManager = {
   },
 
   lockApp() {
+    if (window.resetAllModules) window.resetAllModules();
     const overlay = $('#authOverlay');
     if (overlay) overlay.classList.remove('hidden');
     const nameEl = $('#headerUserName');
@@ -112,6 +125,7 @@ window.AuthManager = {
   },
 
   unlockApp() {
+    if (window.resetAllModules) window.resetAllModules();
     const overlay = $('#authOverlay');
     if (overlay) overlay.classList.add('hidden');
     const name = this.currentUser?.username || '會員';
@@ -1547,6 +1561,27 @@ window.PdfSplitModule = {
   splitRatio: 0.5,
   isDragging: false,
 
+  clear() {
+    this.pdfDoc = null;
+    this.pdfBytes = null;
+    this.totalPages = 0;
+    this.currentPage = 1;
+    const fileIn = $('#splitFileIn');
+    if (fileIn) fileIn.value = '';
+    const canvas = $('#splitPdfCanvas'), ovr = $('#splitCutOverlay');
+    if (canvas) { const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); }
+    if (ovr) { const ctx = ovr.getContext('2d'); ctx.clearRect(0, 0, ovr.width, ovr.height); }
+    const wrap = $('#splitCanvasWrap');
+    if (wrap) wrap.style.display = 'none';
+    const hint = $('#splitEmptyHint');
+    if (hint) hint.style.display = 'block';
+    const pageCnt = $('#splitPageCount');
+    if (pageCnt) pageCnt.textContent = '0 頁';
+    const btnExp = $('#btnExportSplitPdf');
+    if (btnExp) btnExp.disabled = true;
+    showToast('已清空 PDF 檔案', 'info');
+  },
+
   init() {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -1566,6 +1601,8 @@ window.PdfSplitModule = {
 
     $('#splitApplyAll').onclick = () => showToast('已套用切割線設定至所有頁面', 'success');
     $('#btnExportSplitPdf').onclick = () => this.exportSplitPdf();
+    const btnClrSplit = $('#btnClearPdfSplit');
+    if (btnClrSplit) btnClrSplit.onclick = () => this.clear();
 
     this.initCutOverlay();
   },
@@ -1775,6 +1812,27 @@ window.OcrModule = {
   isSelecting: false,
   startPt: null,
 
+  clear() {
+    this.currentImg = null;
+    this.cropRect = null;
+    const fileIn = $('#ocrFileIn');
+    if (fileIn) fileIn.value = '';
+    const c1 = $('#ocrImgCanvas'), c2 = $('#ocrSelectOverlay');
+    if (c1) { const ctx = c1.getContext('2d'); ctx.clearRect(0, 0, c1.width, c1.height); }
+    if (c2) { const ctx = c2.getContext('2d'); ctx.clearRect(0, 0, c2.width, c2.height); }
+    const wrap = $('#ocrCanvasWrap');
+    if (wrap) wrap.style.display = 'none';
+    const hint = $('#ocrEmptyHint');
+    if (hint) hint.style.display = 'block';
+    const res = $('#ocrResultText');
+    if (res) res.value = '';
+    const btn = $('#btnStartOcr');
+    if (btn) btn.disabled = true;
+    const prog = $('#ocrProgressWrap');
+    if (prog) prog.style.display = 'none';
+    showToast('已清除 OCR 圖片與辨識結果', 'info');
+  },
+
   init() {
     const drop = $('#ocrDrop'), fileIn = $('#ocrFileIn');
     drop.onclick = () => fileIn.click();
@@ -1783,14 +1841,14 @@ window.OcrModule = {
     drop.ondragleave = () => drop.classList.remove('dragover');
     drop.ondrop = e => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files[0]) this.loadFile(e.dataTransfer.files[0]); };
 
-    const btnSample = $('#btnLoadOcrSample');
-    if (btnSample) btnSample.onclick = () => this.loadSample();
-
     $('#ocrEngine').onchange = e => {
       $('#ocrLangRow').style.display = e.target.value === 'tesseract' ? 'flex' : 'none';
     };
 
     $('#btnStartOcr').onclick = () => this.runOcr();
+    const btnClrOcr = $('#btnClearOcr');
+    if (btnClrOcr) btnClrOcr.onclick = () => this.clear();
+
     $('#btnCopyOcrText').onclick = () => {
       const txt = $('#ocrResultText').value;
       if (!txt) { showToast('辨識結果為空', 'warning'); return; }
@@ -2007,6 +2065,26 @@ window.BgRemoveModule = {
   brushMode: 'none',
   isPainting: false,
 
+  clear() {
+    this.currentImg = null;
+    this.rawCanvas = null;
+    this.resultCanvas = null;
+    const fileIn = $('#bgFileIn');
+    if (fileIn) fileIn.value = '';
+    const wrap = $('#bgCanvasWrap');
+    if (wrap) wrap.style.display = 'none';
+    const hint = $('#bgEmptyHint');
+    if (hint) hint.style.display = 'block';
+    const btnRun = $('#btnRunBgRemove');
+    if (btnRun) btnRun.disabled = true;
+    const btnReset = $('#btnResetBg');
+    if (btnReset) btnReset.disabled = true;
+    const dlPng = $('#btnDownloadBgPng'), dlJpg = $('#btnDownloadBgJpg');
+    if (dlPng) dlPng.disabled = true;
+    if (dlJpg) dlJpg.disabled = true;
+    showToast('已清除去背圖片', 'info');
+  },
+
   init() {
     const drop = $('#bgDrop'), fileIn = $('#bgFileIn');
     drop.onclick = () => fileIn.click();
@@ -2014,9 +2092,6 @@ window.BgRemoveModule = {
     drop.ondragover = e => { e.preventDefault(); drop.classList.add('dragover'); };
     drop.ondragleave = () => drop.classList.remove('dragover');
     drop.ondrop = e => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files[0]) this.loadFile(e.dataTransfer.files[0]); };
-
-    const btnSample = $('#btnLoadBgSample');
-    if (btnSample) btnSample.onclick = () => this.loadSample();
 
     $('#bgTolerance').oninput = e => $('#bgToleranceVal').textContent = e.target.value;
     $('#bgFeather').oninput = e => $('#bgFeatherVal').textContent = e.target.value + 'px';
@@ -2027,6 +2102,8 @@ window.BgRemoveModule = {
 
     const btnRun = $('#btnRunBgRemove');
     if (btnRun) btnRun.onclick = () => this.runBgRemove();
+    const btnClrBg = $('#btnClearBgRemove');
+    if (btnClrBg) btnClrBg.onclick = () => this.clear();
 
     const btnReset = $('#btnResetBg');
     if (btnReset) btnReset.onclick = () => this.resetImage();
@@ -2058,37 +2135,6 @@ window.BgRemoveModule = {
     $('#bgSendToPdf').onclick = () => this.sendToModule('convert');
 
     this.initCanvasInteractions();
-  },
-
-  async loadSample() {
-    const c = document.createElement('canvas');
-    c.width = 500; c.height = 500;
-    const ctx = c.getContext('2d');
-
-    // Light off-white backdrop
-    ctx.fillStyle = '#f1f5f9';
-    ctx.fillRect(0, 0, 500, 500);
-
-    // Subject: Circle stamp badge
-    ctx.lineWidth = 14;
-    ctx.strokeStyle = '#dc2626';
-    ctx.beginPath();
-    ctx.arc(250, 250, 170, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.fillStyle = '#dc2626';
-    ctx.font = 'bold 36px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('POBI MEDIA', 250, 220);
-    ctx.font = 'bold 24px sans-serif';
-    ctx.fillText('審核通過 · 專業認證', 250, 275);
-    ctx.fillText('★ ★ ★ ★ ★', 250, 315);
-
-    c.toBlob(blob => {
-      const file = new File([blob], '印章印鑑去背樣張.png', { type: 'image/png' });
-      this.loadFile(file);
-      showToast('已載入去背測試範例圖', 'success');
-    }, 'image/png');
   },
 
   async loadFile(file) {
@@ -2443,39 +2489,91 @@ window.BgRemoveModule = {
   },
 
   async runBgRemove() {
-    if (!this.resultCanvas) return;
+    if (!this.resultCanvas || !this.rawCanvas) {
+      showToast('請先載入欲去背的圖片', 'warning');
+      return;
+    }
     const btn = $('#btnRunBgRemove');
-    btn.disabled = true;
-    btn.textContent = 'AI 深度分析去背中...';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'AI 深度輪廓分析中...';
+    }
 
     try {
-      showToast('正在透過 Gemini 深度視覺模型分析主體邊界...', 'info');
+      showToast('正在透過 Gemini 深度視覺模型辨識主體輪廓...', 'info');
 
-      // Attempt AI Vision call if API key / server is ready
-      let aiResult = null;
+      const w = this.rawCanvas.width, h = this.rawCanvas.height;
+      let aiSuccess = false;
+
+      // 1. Attempt AI Vision Polygon Segmentation
       try {
-        const b64 = this.rawCanvas.toDataURL('image/png').split(',')[1];
-        const prompt = 'You are a professional image segmentation assistant. Identify the main subject and background colors. Return JSON: {"bgType":"solid|gradient|complex","dominantBg":["#ffffff"],"subjectBoundingBox":[0,0,1000,1000]}';
+        const thumbCanvas = document.createElement('canvas');
+        const maxDim = 600;
+        const scale = Math.min(maxDim / w, maxDim / h, 1);
+        thumbCanvas.width = Math.round(w * scale);
+        thumbCanvas.height = Math.round(h * scale);
+        thumbCanvas.getContext('2d').drawImage(this.rawCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+
+        const b64 = thumbCanvas.toDataURL('image/png').split(',')[1];
+        const prompt = 'Identify the primary foreground subject (person, animal, product, vehicle, food, main object) in this image. Return a JSON object with: 1. "polygon": [[y1, x1], [y2, x2], ...] an ordered array of 30 to 80 coordinate points (normalized 0 to 1000) closely tracing the subject outline. 2. "subjectBox": [ymin, xmin, ymax, xmax] (0-1000). Return JSON ONLY without markdown.';
+
         const aiText = await window.ApiManager.callGeminiVision(b64, prompt);
         if (aiText) {
-          try {
-            const cleanJson = aiText.replace(/```json|```/g, '').trim();
-            aiResult = JSON.parse(cleanJson);
-          } catch (e) {}
+          const cleanJson = aiText.replace(/```json|```/g, '').trim();
+          const match = cleanJson.match(/\{[\s\S]*\}/);
+          if (match) {
+            const aiData = JSON.parse(match[0]);
+            if (aiData.polygon && Array.isArray(aiData.polygon) && aiData.polygon.length >= 3) {
+              const maskCanvas = document.createElement('canvas');
+              maskCanvas.width = w; maskCanvas.height = h;
+              const mCtx = maskCanvas.getContext('2d');
+              mCtx.fillStyle = '#ffffff';
+              mCtx.beginPath();
+
+              const pts = aiData.polygon;
+              mCtx.moveTo((pts[0][1] / 1000) * w, (pts[0][0] / 1000) * h);
+              for (let i = 1; i < pts.length; i++) {
+                mCtx.lineTo((pts[i][1] / 1000) * w, (pts[i][0] / 1000) * h);
+              }
+              mCtx.closePath();
+              mCtx.fill();
+
+              const resCtx = this.resultCanvas.getContext('2d');
+              resCtx.clearRect(0, 0, w, h);
+              resCtx.drawImage(this.rawCanvas, 0, 0);
+              resCtx.globalCompositeOperation = 'destination-in';
+              resCtx.drawImage(maskCanvas, 0, 0);
+              resCtx.globalCompositeOperation = 'source-over';
+
+              const imgData = resCtx.getImageData(0, 0, w, h);
+              this.applyFeather(imgData, 2);
+              resCtx.putImageData(imgData, 0, 0);
+
+              this.updateDisplay();
+              aiSuccess = true;
+            }
+          }
         }
       } catch (aiErr) {
-        console.warn('AI API Call info:', aiErr.message);
+        console.warn('AI Vision call info:', aiErr.message);
       }
 
-      // Execute precision background extraction
-      this.smartAutoEdgeBgRemove();
+      // 2. Fallback to smart edge flood-fill if AI Vision was not available or no polygon
+      if (!aiSuccess) {
+        this.smartAutoEdgeBgRemove();
+      }
+
+      $('#btnDownloadBgPng').disabled = false;
+      $('#btnDownloadBgJpg').disabled = false;
       showToast('AI 智慧去背完成！您可使用筆刷修補或直接下載', 'success');
     } catch (e) {
       console.error(e);
       showToast('去背處理異常: ' + e.message, 'error');
     } finally {
-      btn.disabled = false;
-      btn.textContent = '開始 AI 智慧去背';
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '開始 AI 智慧去背';
+      }
     }
   },
 
