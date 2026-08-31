@@ -20,7 +20,7 @@ export async function onRequestPost(context) {
     }
 
     const cleanKey = String(apiKey).trim();
-    const model = body.model || 'gemini-1.5-flash';
+    const model = body.model || 'gemini-3.6-flash';
     const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(cleanKey);
 
     const geminiRes = await fetch(geminiUrl, {
@@ -67,3 +67,4 @@ export async function onRequestOptions() {
     }
   });
 }
+
