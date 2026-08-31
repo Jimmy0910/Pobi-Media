@@ -4,9 +4,9 @@ export async function onRequestPost(context) {
 
   try {
     const body = await request.json();
-    const apiKey = env.GEMINI_API_KEY;
+    const apiKey = env?.GEMINI_API_KEY || (typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY : '');
 
-    if (!apiKey) {
+    if (!apiKey || String(apiKey).trim().length === 0) {
       return new Response(JSON.stringify({
         error: 'SERVER_KEY_NOT_CONFIGURED',
         message: '伺服器未配置 GEMINI_API_KEY。請在右上角「AI 設定」輸入您的個人 Google Gemini API Key，或直接使用「Tesseract.js 本機離線引擎」進行 100% 免費無限制辨識！'
@@ -19,14 +19,15 @@ export async function onRequestPost(context) {
       });
     }
 
+    const cleanKey = String(apiKey).trim();
     const model = body.model || 'gemini-1.5-flash';
-    const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+    const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(cleanKey);
 
     const geminiRes = await fetch(geminiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey
+        'x-goog-api-key': cleanKey
       },
       body: JSON.stringify({
         contents: body.contents,
