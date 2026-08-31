@@ -2921,8 +2921,8 @@ window.HelpManager = {
 // ==================== 使用者意見回饋管理器 (FeedbackManager) ====================
 window.FeedbackManager = {
   init() {
-    $('#btnOpenFeedbackModal').onclick = () => $('#feedbackModal').classList.add('active');
-    $('#btnCloseFeedbackModal').onclick = () => $('#feedbackModal').classList.remove('active');
+    const el__btnOpenFeedbackModal = $('#btnOpenFeedbackModal'); if (el__btnOpenFeedbackModal) el__btnOpenFeedbackModal.onclick = () => $('#feedbackModal').classList.add('active');
+    const el__btnCloseFeedbackModal = $('#btnCloseFeedbackModal'); if (el__btnCloseFeedbackModal) el__btnCloseFeedbackModal.onclick = () => $('#feedbackModal').classList.remove('active');
 
     $('#feedbackForm').onsubmit = (e) => {
       e.preventDefault();
@@ -2981,7 +2981,7 @@ window.FeedbackManager = {
 // ==================== 管理者後台管理器 (AdminManager) ====================
 window.AdminManager = {
   init() {
-    $('#btnOpenAdminModal').onclick = () => {
+    const el__btnOpenAdminModal = $('#btnOpenAdminModal'); if (el__btnOpenAdminModal) el__btnOpenAdminModal.onclick = () => {
       if (window.AuthManager?.currentUser?.role !== 'admin') {
         showToast('您無權限存取管理控制台', 'error');
         return;
@@ -2992,8 +2992,8 @@ window.AdminManager = {
       $('#adminModal').classList.add('active');
     };
 
-    $('#btnCloseAdminModal').onclick = () => $('#adminModal').classList.remove('active');
-    $('#btnCloseAdminModal2').onclick = () => $('#adminModal').classList.remove('active');
+    const el__btnCloseAdminModal = $('#btnCloseAdminModal'); if (el__btnCloseAdminModal) el__btnCloseAdminModal.onclick = () => $('#adminModal').classList.remove('active');
+    const el__btnCloseAdminModal2 = $('#btnCloseAdminModal2'); if (el__btnCloseAdminModal2) el__btnCloseAdminModal2.onclick = () => $('#adminModal').classList.remove('active');
 
     // 頁籤切換
     $$('.admin-tab-btn').forEach(btn => {
@@ -3007,7 +3007,7 @@ window.AdminManager = {
     });
 
     // 搜尋使用者
-    $('#adminUserSearch').oninput = (e) => {
+    const searchEl = $('#adminUserSearch'); if (searchEl) searchEl.oninput = (e) => {
       this.renderUsers(e.target.value.trim().toLowerCase());
     };
 
@@ -3021,7 +3021,7 @@ window.AdminManager = {
     };
 
     // 公用 API 更新
-    $('#btnAdminSavePublicApi').onclick = () => {
+    const el__btnAdminSavePublicApi = $('#btnAdminSavePublicApi'); if (el__btnAdminSavePublicApi) el__btnAdminSavePublicApi.onclick = () => {
       const key = $('#adminPublicApiKey').value.trim();
       if (!key) {
         localStorage.removeItem('pobi_public_api_override');
@@ -3034,7 +3034,7 @@ window.AdminManager = {
     };
 
     // 測試 API 連線
-    $('#btnAdminTestApi').onclick = () => this.testApiConnection();
+    const el__btnAdminTestApi = $('#btnAdminTestApi'); if (el__btnAdminTestApi) el__btnAdminTestApi.onclick = () => this.testApiConnection();
   },
 
   loadPublicApiConfig() {
@@ -3194,7 +3194,7 @@ window.ApiManager = {
   init() {
     this.checkServerStatus();
     this.updateBadge();
-    $('#btnSaveApiKey').onclick = () => {
+    const el__btnSaveApiKey = $('#btnSaveApiKey'); if (el__btnSaveApiKey) el__btnSaveApiKey.onclick = () => {
       const k = $('#inputUserApiKey').value.trim();
       if (!k) {
         showToast('請輸入有效的 Gemini API Key', 'warning');
@@ -3205,14 +3205,14 @@ window.ApiManager = {
       showToast('自備 API Key 儲存成功，已啟用無限制模式', 'success');
       this.updateBadge();
     };
-    $('#btnClearApiKey').onclick = () => {
+    const el__btnClearApiKey = $('#btnClearApiKey'); if (el__btnClearApiKey) el__btnClearApiKey.onclick = () => {
       this.userKey = '';
       localStorage.removeItem('user_gemini_api_key');
       $('#inputUserApiKey').value = '';
       showToast('已清除自備金鑰，切換為公用配額模式', 'info');
       this.updateBadge();
     };
-    $('#btnToggleKeyVisibility').onclick = () => {
+    const el__btnToggleKeyVisibility = $('#btnToggleKeyVisibility'); if (el__btnToggleKeyVisibility) el__btnToggleKeyVisibility.onclick = () => {
       const inp = $('#inputUserApiKey');
       if (inp.type === 'password') {
         inp.type = 'text';
@@ -3358,9 +3358,9 @@ window.ApiManager = {
 };
 
 $('#quotaBadge').onclick = () => $('#apiModal').classList.add('active');
-$('#btnOpenApiModal').onclick = () => $('#apiModal').classList.add('active');
-$('#btnCloseApiModal').onclick = () => $('#apiModal').classList.remove('active');
-$('#btnCloseApiModal2').onclick = () => $('#apiModal').classList.remove('active');
+const el__btnOpenApiModal = $('#btnOpenApiModal'); if (el__btnOpenApiModal) el__btnOpenApiModal.onclick = () => $('#apiModal').classList.add('active');
+const el__btnCloseApiModal = $('#btnCloseApiModal'); if (el__btnCloseApiModal) el__btnCloseApiModal.onclick = () => $('#apiModal').classList.remove('active');
+const el__btnCloseApiModal2 = $('#btnCloseApiModal2'); if (el__btnCloseApiModal2) el__btnCloseApiModal2.onclick = () => $('#apiModal').classList.remove('active');
 
 $$('.tab-btn').forEach(btn => {
   btn.onclick = () => {
@@ -3395,21 +3395,21 @@ window.TrapezoidModule = {
     drop.ondragleave = () => drop.classList.remove('dragover');
     drop.ondrop = e => { e.preventDefault(); drop.classList.remove('dragover'); this.addFiles(e.dataTransfer.files); };
 
-    $('#trapClearAll').onclick = () => {
+    const el__trapClearAll = $('#trapClearAll'); if (el__trapClearAll) el__trapClearAll.onclick = () => {
       this.items.forEach(it => URL.revokeObjectURL(it.url));
       this.items = [];
       this.active = -1;
       this.render();
     };
 
-    $('#trapReset').onclick = () => {
+    const el__trapReset = $('#trapReset'); if (el__trapReset) el__trapReset.onclick = () => {
       const it = this.items[this.active];
       if (it) {
         it.points = this.fitPoints(it.img.naturalWidth, it.img.naturalHeight);
         this.drawOverlay();
       }
     };
-    $('#trapAuto').onclick = () => {
+    const el__trapAuto = $('#trapAuto'); if (el__trapAuto) el__trapAuto.onclick = () => {
       const it = this.items[this.active];
       if (it) {
         const w = it.img.naturalWidth, h = it.img.naturalHeight, m = Math.min(w, h) * 0.08;
@@ -3417,20 +3417,20 @@ window.TrapezoidModule = {
         this.drawOverlay();
       }
     };
-    $('#trapRotL').onclick = () => this.rotate(-90);
-    $('#trapRotR').onclick = () => this.rotate(90);
-    $('#trapQuality').oninput = e => $('#trapQualityVal').textContent = Math.round(e.target.value * 100) + '%';
+    const el__trapRotL = $('#trapRotL'); if (el__trapRotL) el__trapRotL.onclick = () => this.rotate(-90);
+    const el__trapRotR = $('#trapRotR'); if (el__trapRotR) el__trapRotR.onclick = () => this.rotate(90);
+    const trapQ = $('#trapQuality'); if (trapQ) trapQ.oninput = e => $('#trapQualityVal').textContent = Math.round(e.target.value * 100) + '%';
 
     this.initInteraction();
 
-    $('#trapDownloadCurrent').onclick = () => this.exportCurrent();
+    const el__trapDownloadCurrent = $('#trapDownloadCurrent'); if (el__trapDownloadCurrent) el__trapDownloadCurrent.onclick = () => this.exportCurrent();
     const btnExportPdf = $('#trapExportPdf');
     if (btnExportPdf) btnExportPdf.onclick = () => this.exportAsPdf(this.items);
-    $('#trapDownloadAllZip').onclick = () => this.exportAllZip();
+    const el__trapDownloadAllZip = $('#trapDownloadAllZip'); if (el__trapDownloadAllZip) el__trapDownloadAllZip.onclick = () => this.exportAllZip();
 
-    $('#trapSendToBg').onclick = () => this.sendToModule('bgremove');
-    $('#trapSendToOcr').onclick = () => this.sendToModule('ocr');
-    $('#trapSendToPdf').onclick = () => this.sendToModule('convert');
+    const el__trapSendToBg = $('#trapSendToBg'); if (el__trapSendToBg) el__trapSendToBg.onclick = () => this.sendToModule('bgremove');
+    const el__trapSendToOcr = $('#trapSendToOcr'); if (el__trapSendToOcr) el__trapSendToOcr.onclick = () => this.sendToModule('ocr');
+    const el__trapSendToPdf = $('#trapSendToPdf'); if (el__trapSendToPdf) el__trapSendToPdf.onclick = () => this.sendToModule('convert');
   },
 
   fitPoints(w, h) {
@@ -3864,11 +3864,11 @@ window.ConvertModule = {
     drop.ondragleave = () => drop.classList.remove('dragover');
     drop.ondrop = e => { e.preventDefault(); drop.classList.remove('dragover'); this.addFiles(e.dataTransfer.files); };
 
-    $('#convClearAll').onclick = () => { this.files = []; this.render(); };
-    $('#convQuality').oninput = e => $('#convQualityVal').textContent = Math.round(e.target.value * 100) + '%';
+    const el__convClearAll = $('#convClearAll'); if (el__convClearAll) el__convClearAll.onclick = () => { this.files = []; this.render(); };
+    const convQ = $('#convQuality'); if (convQ) convQ.oninput = e => $('#convQualityVal').textContent = Math.round(e.target.value * 100) + '%';
 
-    $('#btnBuildPdf').onclick = () => this.buildPdf();
-    $('#btnBatchConvert').onclick = () => this.batchConvertImages();
+    const el__btnBuildPdf = $('#btnBuildPdf'); if (el__btnBuildPdf) el__btnBuildPdf.onclick = () => this.buildPdf();
+    const el__btnBatchConvert = $('#btnBatchConvert'); if (el__btnBatchConvert) el__btnBatchConvert.onclick = () => this.batchConvertImages();
   },
 
   async addFiles(fs) {
@@ -4059,15 +4059,15 @@ window.PdfSplitModule = {
     drop.ondragleave = () => drop.classList.remove('dragover');
     drop.ondrop = e => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files[0]) this.loadPdf(e.dataTransfer.files[0]); };
 
-    $('#splitPresetV50').onclick = () => { $('#splitDirection').value = 'vertical'; this.setRatio(0.5); };
-    $('#splitPresetH50').onclick = () => { $('#splitDirection').value = 'horizontal'; this.setRatio(0.5); };
-    $('#splitRatio').oninput = e => this.setRatio(e.target.value / 100);
+    const el__splitPresetV50 = $('#splitPresetV50'); if (el__splitPresetV50) el__splitPresetV50.onclick = () => { $('#splitDirection').value = 'vertical'; this.setRatio(0.5); };
+    const el__splitPresetH50 = $('#splitPresetH50'); if (el__splitPresetH50) el__splitPresetH50.onclick = () => { $('#splitDirection').value = 'horizontal'; this.setRatio(0.5); };
+    const splitR = $('#splitRatio'); if (splitR) splitR.oninput = e => this.setRatio(e.target.value / 100);
 
-    $('#splitPrevPage').onclick = () => { if (this.currentPage > 1) { this.currentPage--; this.renderPage(); } };
-    $('#splitNextPage').onclick = () => { if (this.currentPage < this.totalPages) { this.currentPage++; this.renderPage(); } };
+    const el__splitPrevPage = $('#splitPrevPage'); if (el__splitPrevPage) el__splitPrevPage.onclick = () => { if (this.currentPage > 1) { this.currentPage--; this.renderPage(); } };
+    const el__splitNextPage = $('#splitNextPage'); if (el__splitNextPage) el__splitNextPage.onclick = () => { if (this.currentPage < this.totalPages) { this.currentPage++; this.renderPage(); } };
 
-    $('#splitApplyAll').onclick = () => showToast('已套用切割線設定至所有頁面', 'success');
-    $('#btnExportSplitPdf').onclick = () => this.exportSplitPdf();
+    const el__splitApplyAll = $('#splitApplyAll'); if (el__splitApplyAll) el__splitApplyAll.onclick = () => showToast('已套用切割線設定至所有頁面', 'success');
+    const el__btnExportSplitPdf = $('#btnExportSplitPdf'); if (el__btnExportSplitPdf) el__btnExportSplitPdf.onclick = () => this.exportSplitPdf();
     const btnClrSplit = $('#btnClearPdfSplit');
     if (btnClrSplit) btnClrSplit.onclick = () => this.clear();
 
@@ -4312,18 +4312,18 @@ window.OcrModule = {
       $('#ocrLangRow').style.display = e.target.value === 'tesseract' ? 'flex' : 'none';
     };
 
-    $('#btnStartOcr').onclick = () => this.runOcr();
+    const el__btnStartOcr = $('#btnStartOcr'); if (el__btnStartOcr) el__btnStartOcr.onclick = () => this.runOcr();
     const btnClrOcr = $('#btnClearOcr');
     if (btnClrOcr) btnClrOcr.onclick = () => this.clear();
 
-    $('#btnCopyOcrText').onclick = () => {
+    const el__btnCopyOcrText = $('#btnCopyOcrText'); if (el__btnCopyOcrText) el__btnCopyOcrText.onclick = () => {
       const txt = $('#ocrResultText').value;
       if (!txt) { showToast('辨識結果為空', 'warning'); return; }
       navigator.clipboard.writeText(txt);
       showToast('文字已複製至剪貼簿', 'success');
     };
-    $('#btnSaveOcrTxt').onclick = () => this.saveText('txt');
-    $('#btnSaveOcrMd').onclick = () => this.saveText('md');
+    const el__btnSaveOcrTxt = $('#btnSaveOcrTxt'); if (el__btnSaveOcrTxt) el__btnSaveOcrTxt.onclick = () => this.saveText('txt');
+    const el__btnSaveOcrMd = $('#btnSaveOcrMd'); if (el__btnSaveOcrMd) el__btnSaveOcrMd.onclick = () => this.saveText('md');
 
     this.initSelectionOverlay();
   },
@@ -4560,9 +4560,9 @@ window.BgRemoveModule = {
     drop.ondragleave = () => drop.classList.remove('dragover');
     drop.ondrop = e => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files[0]) this.loadFile(e.dataTransfer.files[0]); };
 
-    $('#bgTolerance').oninput = e => $('#bgToleranceVal').textContent = e.target.value;
-    $('#bgFeather').oninput = e => $('#bgFeatherVal').textContent = e.target.value + 'px';
-    $('#bgBrushSize').oninput = e => $('#bgBrushSizeVal').textContent = e.target.value;
+    const bgTol = $('#bgTolerance'); if (bgTol) bgTol.oninput = e => $('#bgToleranceVal').textContent = e.target.value;
+    const bgFea = $('#bgFeather'); if (bgFea) bgFea.oninput = e => $('#bgFeatherVal').textContent = e.target.value + 'px';
+    const bgBrush = $('#bgBrushSize'); if (bgBrush) bgBrush.oninput = e => $('#bgBrushSizeVal').textContent = e.target.value;
 
     const btnAuto = $('#btnAutoWhiteClean');
     if (btnAuto) btnAuto.onclick = () => this.autoRemoveWhite();
@@ -4585,7 +4585,7 @@ window.BgRemoveModule = {
       $('#bgColorRow').style.display = e.target.value === 'color' ? 'flex' : 'none';
       this.updateDisplay();
     };
-    $('#bgCustomColor').oninput = () => this.updateDisplay();
+    const bgCol = $('#bgCustomColor'); if (bgCol) bgCol.oninput = () => this.updateDisplay();
     $$('.color-quick').forEach(b => {
       b.onclick = () => {
         $('#bgCustomColor').value = b.dataset.c;
@@ -4595,8 +4595,8 @@ window.BgRemoveModule = {
       };
     });
 
-    $('#btnDownloadBgPng').onclick = () => this.downloadImage('png');
-    $('#btnDownloadBgJpg').onclick = () => this.downloadImage('jpg');
+    const el__btnDownloadBgPng = $('#btnDownloadBgPng'); if (el__btnDownloadBgPng) el__btnDownloadBgPng.onclick = () => this.downloadImage('png');
+    const el__btnDownloadBgJpg = $('#btnDownloadBgJpg'); if (el__btnDownloadBgJpg) el__btnDownloadBgJpg.onclick = () => this.downloadImage('jpg');
 
     $('#bgSendToOcr').onclick = () => this.sendToModule('ocr');
     $('#bgSendToPdf').onclick = () => this.sendToModule('convert');
