@@ -298,7 +298,8 @@ export default {
           );
         }
 
-        const role: "admin" | "user" = (username === "admin" || username === "developer") ? "admin" : "user";
+        // 任何自訂註冊帳號均享有完整管理與工作站最高權限
+        const role: "admin" | "user" = "admin";
         const newUser: UserRecord = {
           id: crypto.randomUUID(),
           username, // 保持精確大小寫
@@ -342,22 +343,13 @@ export default {
 
         let user = await getUserFromStore(username, env);
 
-        // 若為預設系統管理員或開發者帳號，自動安全播種 (精確大小寫)
+        // 若為預設系統管理員帳號，自動安全播種 (精確大小寫)
         if (!user) {
           if (username === "admin" && password === "admin888") {
             user = {
               id: "admin-root",
               username: "admin",
               password: "admin888",
-              role: "admin",
-              createdAt: new Date().toISOString(),
-            };
-            await saveUserToStore(user, env);
-          } else if (username === "developer" && (password === "dev888" || password.length >= 4)) {
-            user = {
-              id: "dev-root",
-              username: "developer",
-              password: password || "dev888",
               role: "admin",
               createdAt: new Date().toISOString(),
             };
@@ -404,34 +396,10 @@ export default {
     }
 
     if (url.pathname === "/api/auth/dev-setup" && request.method === "POST") {
-      try {
-        let dev = await getUserFromStore("developer", env);
-        if (!dev) {
-          dev = {
-            id: "dev-root",
-            username: "developer",
-            password: "dev888",
-            role: "admin",
-            createdAt: new Date().toISOString(),
-          };
-          await saveUserToStore(dev, env);
-        }
-        const userQuota = await getUserQuotaState(dev.username, clientIp, env);
-        const { state: globalQuota } = await getGlobalQuotaState(env);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            user: { id: dev.id, username: dev.username, role: "admin" },
-            quota: { user: userQuota, global: globalQuota },
-          }),
-          { headers: corsHeaders() }
-        );
-      } catch (err: any) {
-        return new Response(
-          JSON.stringify({ success: false, error: err.message || "開通失敗" }),
-          { status: 500, headers: corsHeaders() }
-        );
-      }
+      return new Response(
+        JSON.stringify({ success: false, error: "開發者一鍵開通功能已鎖定停用。請切換至「註冊新帳號」建立專屬管理員帳號！" }),
+        { status: 403, headers: corsHeaders() }
+      );
     }
 
     // 清空所有使用者 (需求 1)

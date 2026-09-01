@@ -54,31 +54,32 @@ window.AuthManager = {
 
   init() {
     this.checkOneTimeUserClear();
-    this.getUsers(); // 確保預設管理員與開發者種子帳號存在
+    this.getUsers(); // 確保預設種子帳號存在
     this.checkSession();
     this.bindEvents();
   },
 
   checkOneTimeUserClear() {
-    // 依需求 1：清空所有既有使用者快取與舊資料
-    if (!localStorage.getItem('pobi_v2_users_cleared')) {
+    // 清空所有既有使用者快取與舊 developer 資料
+    if (!localStorage.getItem('pobi_v3_users_cleared')) {
       localStorage.removeItem('pobi_users');
       localStorage.removeItem('pobi_session');
       sessionStorage.removeItem('pobi_session');
       try {
         fetch('/api/auth/clear-all', { method: 'POST' }).catch(() => {});
       } catch {}
-      localStorage.setItem('pobi_v2_users_cleared', 'true');
+      localStorage.setItem('pobi_v3_users_cleared', 'true');
     }
   },
 
   getUsers() {
     try {
       let users = JSON.parse(localStorage.getItem('pobi_users') || '[]');
-      // 確保跨裝置、本機與雲端唯一：全系統僅存在唯一 developer 與 admin 帳號
       const seen = new Set();
       users = users.filter(u => {
         const uname = u.username || '';
+        // 排除舊版 developer 帳號
+        if (uname === 'developer') return false;
         if (seen.has(uname)) return false;
         seen.add(uname);
         return true;
@@ -89,15 +90,6 @@ window.AuthManager = {
           id: 'admin-root',
           username: 'admin',
           password: 'admin888',
-          role: 'admin',
-          createdAt: new Date().toISOString()
-        });
-      }
-      if (!users.some(u => u.username === 'developer')) {
-        users.push({
-          id: 'dev-root',
-          username: 'developer',
-          password: 'dev888',
           role: 'admin',
           createdAt: new Date().toISOString()
         });
@@ -117,9 +109,12 @@ window.AuthManager = {
     const saved = localStorage.getItem('pobi_session') || sessionStorage.getItem('pobi_session');
     if (saved) {
       try {
-        this.currentUser = JSON.parse(saved);
-        this.unlockApp();
-        return;
+        const parsed = JSON.parse(saved);
+        if (parsed.username !== 'developer') {
+          this.currentUser = parsed;
+          this.unlockApp();
+          return;
+        }
       } catch {}
     }
     this.lockApp();
@@ -169,7 +164,6 @@ window.AuthManager = {
     const tabReg = $('#tabAuthRegister');
     const confirmRow = $('#authConfirmPwdRow');
     const submitBtn = $('#btnAuthSubmit');
-    const btnDevSetup = $('#btnAuthDevSetup');
 
     if (tabLogin) {
       tabLogin.onclick = () => {
@@ -215,8 +209,11 @@ window.AuthManager = {
       };
     }
 
+    const btnDevSetup = $('#btnAuthDevSetup');
     if (btnDevSetup) {
-      btnDevSetup.onclick = () => this.setupDeveloperAccount();
+      btnDevSetup.onclick = () => {
+        this.showAlert('開發者帳號快速開通功能已鎖定停用。請切換至「註冊新帳號」建立專屬管理員帳號！', 'warning');
+      };
     }
 
     const btnSignOut = $('#btnSignOut');
@@ -228,58 +225,6 @@ window.AuthManager = {
     if (userBtn) {
       userBtn.onclick = () => $('#apiModal').classList.add('active');
     }
-  },
-
-  async setupDeveloperAccount() {
-    this.showAlert('正在開通並同步開發者管理員帳號...', 'info');
-    try {
-      const res = await fetch('/api/auth/dev-setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          this.currentUser = data.user;
-          localStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
-          if (data.quota && window.ApiManager) {
-            window.ApiManager.updateQuotaFromLogin(data.quota);
-          }
-          this.showAlert('開發者管理員帳號 (developer) 已快速開通並雲端同步登入！', 'success');
-          setTimeout(() => {
-            this.unlockApp();
-            showToast('歡迎開發者 developer！具備完整多媒體與後台最高管理權限。', 'success');
-            if (window.AdminManager) window.AdminManager.renderUsers();
-          }, 350);
-          return;
-        }
-      }
-    } catch {}
-
-    // 本機備援
-    const users = this.getUsers();
-    let dev = users.find(u => u.username === 'developer');
-    if (!dev) {
-      dev = {
-        id: 'dev-root',
-        username: 'developer',
-        password: 'dev888',
-        role: 'admin',
-        createdAt: new Date().toISOString()
-      };
-      users.push(dev);
-      this.saveUsers(users);
-    }
-    
-    this.currentUser = { id: dev.id, username: dev.username, role: 'admin' };
-    localStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
-    
-    this.showAlert('開發者管理員帳號 (developer) 已快速開通並自動登入！', 'success');
-    setTimeout(() => {
-      this.unlockApp();
-      showToast('歡迎開發者 developer！具備完整多媒體與後台最高管理權限。', 'success');
-      if (window.AdminManager) window.AdminManager.renderUsers();
-    }, 350);
   },
 
   showAlert(msg, type = 'error') {
@@ -339,14 +284,14 @@ window.AuthManager = {
           // 同步到本地備份 (嚴格大小寫)
           const users = this.getUsers();
           if (!users.some(x => x.username === u)) {
-            users.push({ id: data.user.id, username: u, password: p, role: data.user.role, createdAt: new Date().toISOString() });
+            users.push({ id: data.user.id, username: u, password: p, role: data.user.role || 'admin', createdAt: new Date().toISOString() });
             this.saveUsers(users);
           }
 
           this.showAlert('註冊成功並已同步至雲端，歡迎使用 Pobi Media！', 'success');
           setTimeout(() => {
             this.unlockApp();
-            showToast(`註冊成功，歡迎 ${data.user.username} 進入 Pobi Media 專業工作站！`, 'success');
+            showToast(`註冊成功，歡迎管理員 ${data.user.username} 進入 Pobi Media 專業工作站！`, 'success');
             if (window.AdminManager) window.AdminManager.renderUsers();
           }, 400);
           return;
@@ -362,7 +307,7 @@ window.AuthManager = {
           return;
         }
 
-        const role = (u === 'admin' || u === 'developer') ? 'admin' : 'user';
+        const role = 'admin'; // 自訂註冊帳號享有最高管理權限
         const newUser = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
         users.push(newUser);
         this.saveUsers(users);
@@ -374,7 +319,7 @@ window.AuthManager = {
         this.showAlert('註冊成功，歡迎使用 Pobi Media！', 'success');
         setTimeout(() => {
           this.unlockApp();
-          showToast(`註冊成功，歡迎 ${newUser.username} 進入 Pobi Media 專業工作站！`, 'success');
+          showToast(`註冊成功，歡迎管理員 ${newUser.username} 進入 Pobi Media 專業工作站！`, 'success');
           if (window.AdminManager) window.AdminManager.renderUsers();
         }, 400);
       }
@@ -688,7 +633,7 @@ window.AdminManager = {
 
       // 刪除使用者
       tr.querySelector('.btn-del-user').onclick = () => {
-        if (u.username === 'admin' || u.username === 'developer') {
+        if (u.username === 'admin') {
           alert('無法刪除系統預設管理者帳號');
           return;
         }

@@ -191,7 +191,8 @@ export async function onRequest(context) {
         );
       }
 
-      const role = (username === 'admin' || username === 'developer') ? 'admin' : 'user';
+      // 任何自訂註冊帳號均享有完整管理與工作站最高權限
+      const role = 'admin';
       const newUser = {
         id: crypto.randomUUID(),
         username,
@@ -246,15 +247,6 @@ export async function onRequest(context) {
             createdAt: new Date().toISOString(),
           };
           await saveUserToStore(user, env);
-        } else if (username === 'developer' && (password === 'dev888' || password.length >= 4)) {
-          user = {
-            id: 'dev-root',
-            username: 'developer',
-            password: password || 'dev888',
-            role: 'admin',
-            createdAt: new Date().toISOString(),
-          };
-          await saveUserToStore(user, env);
         }
       }
 
@@ -298,34 +290,10 @@ export async function onRequest(context) {
 
   // POST /api/auth/dev-setup
   if (action === 'dev-setup' && request.method === 'POST') {
-    try {
-      let dev = await getUserFromStore('developer', env);
-      if (!dev) {
-        dev = {
-          id: 'dev-root',
-          username: 'developer',
-          password: 'dev888',
-          role: 'admin',
-          createdAt: new Date().toISOString(),
-        };
-        await saveUserToStore(dev, env);
-      }
-      const userQuota = await getUserQuotaState(dev.username, clientIp, env);
-      const { state: globalQuota } = await getGlobalQuotaState(env);
-      return new Response(
-        JSON.stringify({
-          success: true,
-          user: { id: dev.id, username: dev.username, role: 'admin' },
-          quota: { user: userQuota, global: globalQuota },
-        }),
-        { headers: corsHeaders() }
-      );
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ success: false, error: err.message || '開通失敗' }),
-        { status: 500, headers: corsHeaders() }
-      );
-    }
+    return new Response(
+      JSON.stringify({ success: false, error: '開發者一鍵開通功能已鎖定停用。請切換至「註冊新帳號」建立專屬管理員帳號！' }),
+      { status: 403, headers: corsHeaders() }
+    );
   }
 
   // POST /api/auth/clear-all
