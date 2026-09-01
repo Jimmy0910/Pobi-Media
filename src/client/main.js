@@ -367,6 +367,7 @@ window.AuthManager = {
         const data = await res.json();
         if (res.ok && data.success && data.user) {
           this.currentUser = data.user;
+          this._sessionPassword = p;
           const storage = remember ? localStorage : sessionStorage;
           storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
@@ -407,6 +408,7 @@ window.AuthManager = {
         this.saveUsers(users);
 
         this.currentUser = { id: newUser.id, username: newUser.username, role: newUser.role };
+        this._sessionPassword = p;
         const storage = remember ? localStorage : sessionStorage;
         storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
@@ -429,12 +431,27 @@ window.AuthManager = {
         const data = await res.json();
         if (res.ok && data.success && data.user) {
           this.currentUser = data.user;
+          this._sessionPassword = p;
           const storage = remember ? localStorage : sessionStorage;
           storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
           // 登入時即時同步配額 (需求 3)
           if (data.quota && window.ApiManager) {
             window.ApiManager.updateQuotaFromLogin(data.quota);
+          }
+
+          // 跨裝置自動解密保險箱中的私人 API Key (免重貼)
+          if (data.user.encryptedVault && window.CryptoVault) {
+            window.CryptoVault.decrypt(data.user.encryptedVault, p).then(decryptedKey => {
+              if (decryptedKey) {
+                localStorage.setItem('user_gemini_api_key', decryptedKey);
+                if (window.ApiManager) {
+                  window.ApiManager.userKey = decryptedKey;
+                  window.ApiManager.renderDashboard();
+                }
+                showToast('已由雲端加密保險箱自動解鎖您的個人 API Key (跨裝置免重貼)！', 'success');
+              }
+            }).catch(e => console.warn('保險箱解密略過:', e));
           }
 
           // 同步到本地備份 (嚴格大小寫)
@@ -470,8 +487,23 @@ window.AuthManager = {
         }
 
         this.currentUser = { id: user.id, username: user.username, role: user.role || 'user' };
+        this._sessionPassword = p;
         const storage = remember ? localStorage : sessionStorage;
         storage.setItem('pobi_session', JSON.stringify(this.currentUser));
+
+        // 離線保險箱解密
+        if (user.encryptedVault && window.CryptoVault) {
+          window.CryptoVault.decrypt(user.encryptedVault, p).then(decryptedKey => {
+            if (decryptedKey) {
+              localStorage.setItem('user_gemini_api_key', decryptedKey);
+              if (window.ApiManager) {
+                window.ApiManager.userKey = decryptedKey;
+                window.ApiManager.renderDashboard();
+              }
+              showToast('已由本機加密保險箱自動解鎖您的個人 API Key！', 'success');
+            }
+          });
+        }
 
         this.showAlert('登入成功，正在為您載入工作台...', 'success');
         setTimeout(() => {
@@ -486,6 +518,7 @@ window.AuthManager = {
     localStorage.removeItem('pobi_session');
     sessionStorage.removeItem('pobi_session');
     this.currentUser = null;
+    this._sessionPassword = null;
     this.lockApp();
     showToast('已安全登出', 'info');
   }
@@ -893,6 +926,94 @@ window.AdminManager = {
 };
 
 
+// ==================== 端到端零知識加密保險箱 (CryptoVault) ====================
+window.CryptoVault = {
+  strToBuf(str) {
+    return new TextEncoder().encode(str);
+  },
+
+  bufToStr(buf) {
+    return new TextDecoder().decode(buf);
+  },
+
+  bufToHex(buf) {
+    const bytes = new Uint8Array(buf);
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  hexToBuf(hex) {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+    }
+    return bytes;
+  },
+
+  async deriveKey(password, saltBytes) {
+    const keyMaterial = await window.crypto.subtle.importKey(
+      'raw',
+      this.strToBuf(password),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveKey']
+    );
+
+    return await window.crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: saltBytes,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  },
+
+  async encrypt(plainText, password) {
+    if (!plainText || !password) return null;
+    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const aesKey = await this.deriveKey(password, salt);
+
+    const encrypted = await window.crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      aesKey,
+      this.strToBuf(plainText)
+    );
+
+    return {
+      cipher: this.bufToHex(encrypted),
+      iv: this.bufToHex(iv),
+      salt: this.bufToHex(salt)
+    };
+  },
+
+  async decrypt(vault, password) {
+    if (!vault || !vault.cipher || !vault.iv || !vault.salt || !password) return null;
+    try {
+      const salt = this.hexToBuf(vault.salt);
+      const iv = this.hexToBuf(vault.iv);
+      const cipherBytes = this.hexToBuf(vault.cipher);
+      const aesKey = await this.deriveKey(password, salt);
+
+      const decryptedBuf = await window.crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        aesKey,
+        cipherBytes
+      );
+
+      return this.bufToStr(decryptedBuf);
+    } catch (e) {
+      console.warn('保險箱解密略過:', e);
+      return null;
+    }
+  }
+};
+
+
 // ==================== API Key、用量追蹤與配額儀表板 (ApiManager) ====================
 window.ApiManager = {
   userKey: localStorage.getItem('user_gemini_api_key') || '',
@@ -952,7 +1073,7 @@ window.ApiManager = {
 
   bindEvents() {
     const el__btnSaveApiKey = $('#btnSaveApiKey');
-    if (el__btnSaveApiKey) el__btnSaveApiKey.onclick = () => {
+    if (el__btnSaveApiKey) el__btnSaveApiKey.onclick = async () => {
       const k = $('#inputUserApiKey').value.trim();
       if (!k) {
         showToast('請輸入有效的 Gemini API Key', 'warning');
@@ -960,16 +1081,49 @@ window.ApiManager = {
       }
       this.userKey = k;
       localStorage.setItem('user_gemini_api_key', k);
-      showToast('自備專屬 API Key 儲存成功，已啟用無限制模式', 'success');
+
+      // 密碼加密綁定、跨裝置零知識同步
+      const currentUser = window.AuthManager?.currentUser;
+      const password = window.AuthManager?._sessionPassword;
+      if (currentUser && password && window.CryptoVault) {
+        try {
+          const vault = await window.CryptoVault.encrypt(k, password);
+          if (vault) {
+            await fetch('/api/auth/save-vault', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: currentUser.username, vault })
+            });
+            showToast('已完成密碼加密綁定，換手機、平板或新裝置登入將自動解密載入！', 'success');
+          }
+        } catch (err) {
+          console.warn('同步加密保險箱失敗:', err);
+          showToast('自備專屬 API Key 儲存成功 (儲存於本機)', 'success');
+        }
+      } else {
+        showToast('自備專屬 API Key 儲存成功，已啟用無限制模式', 'success');
+      }
       this.renderDashboard();
     };
 
     const el__btnClearApiKey = $('#btnClearApiKey');
-    if (el__btnClearApiKey) el__btnClearApiKey.onclick = () => {
+    if (el__btnClearApiKey) el__btnClearApiKey.onclick = async () => {
       this.userKey = '';
       localStorage.removeItem('user_gemini_api_key');
       $('#inputUserApiKey').value = '';
-      showToast('已清除自備金鑰，切換為 5 小時公用配額模式', 'info');
+
+      const currentUser = window.AuthManager?.currentUser;
+      if (currentUser) {
+        try {
+          await fetch('/api/auth/clear-vault', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUser.username })
+          });
+        } catch {}
+      }
+
+      showToast('已清除自備金鑰與雲端加密保險箱，切換為 5 小時公用配額模式', 'info');
       this.renderDashboard();
     };
 
@@ -1135,6 +1289,17 @@ window.ApiManager = {
       if (elPBar) elPBar.style.width = '0%';
       if (elPText) elPText.textContent = '未設定個人金鑰 (目前使用 5 小時公用額度)';
       if (elPPct) elPPct.textContent = '0.0% 已用';
+    }
+
+    const vStatus = $('#vaultStatusText');
+    if (vStatus) {
+      if (this.userKey) {
+        vStatus.textContent = '密碼加密綁定：✓ 已綁定加密保險箱 (換裝置登入自動解鎖免重貼)';
+        vStatus.style.color = '#34d399';
+      } else {
+        vStatus.textContent = '密碼加密綁定：未設定 (輸入金鑰點擊儲存後自動綁定)';
+        vStatus.style.color = '#60a5fa';
+      }
     }
   },
 

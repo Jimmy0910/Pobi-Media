@@ -275,7 +275,12 @@ export async function onRequest(context) {
       return new Response(
         JSON.stringify({
           success: true,
-          user: { id: user.id, username: user.username, role: user.role || 'user' },
+          user: {
+            id: user.id,
+            username: user.username,
+            role: user.role || 'user',
+            encryptedVault: user.encryptedVault || null,
+          },
           quota: { user: userQuota, global: globalQuota },
         }),
         { headers: corsHeaders() }
@@ -283,6 +288,80 @@ export async function onRequest(context) {
     } catch (err) {
       return new Response(
         JSON.stringify({ success: false, error: err.message || '登入失敗' }),
+        { status: 500, headers: corsHeaders() }
+      );
+    }
+  }
+
+  // POST /api/auth/save-vault (使用者同步端到端加密保險箱密文)
+  if (action === 'save-vault' && request.method === 'POST') {
+    try {
+      const body = await request.json();
+      const username = body.username ? String(body.username).trim() : '';
+      const vault = body.vault; // { cipher, iv, salt }
+
+      if (!username || !vault || !vault.cipher || !vault.iv || !vault.salt) {
+        return new Response(
+          JSON.stringify({ success: false, error: '無效的加密保險箱資料' }),
+          { status: 400, headers: corsHeaders() }
+        );
+      }
+
+      const user = await getUserFromStore(username, env);
+      if (!user) {
+        return new Response(
+          JSON.stringify({ success: false, error: '使用者不存在' }),
+          { status: 404, headers: corsHeaders() }
+        );
+      }
+
+      user.encryptedVault = {
+        cipher: String(vault.cipher),
+        iv: String(vault.iv),
+        salt: String(vault.salt),
+        updatedAt: new Date().toISOString()
+      };
+
+      await saveUserToStore(user, env);
+
+      return new Response(
+        JSON.stringify({ success: true, message: '加密保險箱密文已安全同步至雲端 (零知識儲存)' }),
+        { headers: corsHeaders() }
+      );
+    } catch (err) {
+      return new Response(
+        JSON.stringify({ success: false, error: err.message || '儲存失敗' }),
+        { status: 500, headers: corsHeaders() }
+      );
+    }
+  }
+
+  // POST /api/auth/clear-vault (使用者清除雲端保險箱)
+  if (action === 'clear-vault' && request.method === 'POST') {
+    try {
+      const body = await request.json();
+      const username = body.username ? String(body.username).trim() : '';
+
+      if (!username) {
+        return new Response(
+          JSON.stringify({ success: false, error: '未指定使用者' }),
+          { status: 400, headers: corsHeaders() }
+        );
+      }
+
+      const user = await getUserFromStore(username, env);
+      if (user) {
+        user.encryptedVault = null;
+        await saveUserToStore(user, env);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: '已清除雲端加密保險箱' }),
+        { headers: corsHeaders() }
+      );
+    } catch (err) {
+      return new Response(
+        JSON.stringify({ success: false, error: err.message || '清除失敗' }),
         { status: 500, headers: corsHeaders() }
       );
     }

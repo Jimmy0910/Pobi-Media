@@ -775,6 +775,12 @@
           </div>
         </div>
 
+        <!-- 跨裝置加密綁定狀態 -->
+        <div id="vaultSyncStatus" style="font-size:11.5px;color:#60a5fa;margin-top:6px;display:flex;align-items:center;gap:6px">
+          <svg style="width:14px;height:14px;stroke:#60a5fa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span id="vaultStatusText">密碼加密綁定：未設定 (輸入金鑰點擊儲存後自動綁定)</span>
+        </div>
+
         <div style="display:flex;gap:8px;margin-top:8px">
           <button id="btnSaveApiKey" class="btn-primary" style="flex:1">儲存金鑰</button>
           <button id="btnClearApiKey" class="btn-danger">清除</button>
