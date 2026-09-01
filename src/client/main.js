@@ -225,6 +225,100 @@ window.AuthManager = {
     if (userBtn) {
       userBtn.onclick = () => $('#apiModal').classList.add('active');
     }
+
+    // 密碼重設工單申請彈窗事件
+    const btnOpenReset = $('#btnOpenResetModal');
+    if (btnOpenReset) {
+      btnOpenReset.onclick = () => {
+        $('#pwdResetModal')?.classList.add('active');
+        this.clearResetAlert();
+      };
+    }
+
+    const btnCloseReset = $('#btnCloseResetModal');
+    if (btnCloseReset) btnCloseReset.onclick = () => $('#pwdResetModal')?.classList.remove('active');
+    const btnCancelReset = $('#btnCancelReset');
+    if (btnCancelReset) btnCancelReset.onclick = () => $('#pwdResetModal')?.classList.remove('active');
+
+    const resetForm = $('#pwdResetForm');
+    if (resetForm) {
+      resetForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const u = $('#resetUsername')?.value.trim();
+        const contact = $('#resetContact')?.value.trim();
+        const np = $('#resetNewPassword')?.value;
+        const note = $('#resetNote')?.value.trim();
+
+        if (!u || !contact || !np || np.length < 4) {
+          this.showResetAlert('請完整填寫欲重設的帳號、聯絡方式與新密碼 (至少 4 字元)', 'error');
+          return;
+        }
+
+        this.showResetAlert('正在向雲端送出密碼重設申請單...', 'info');
+        try {
+          const res = await fetch('/api/auth/reset-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, contact, newPassword: np, note })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            this.showResetAlert('密碼重設申請已成功送出！請靜候管理員在後台審核核准。', 'success');
+            showToast('密碼重設申請單已送出，管理員審核完成後即可使用新密碼登入！', 'success');
+            setTimeout(() => {
+              $('#pwdResetModal')?.classList.remove('active');
+              $('#pwdResetForm')?.reset();
+              this.clearResetAlert();
+            }, 1800);
+            return;
+          } else {
+            this.showResetAlert(data.error || '送出申請失敗，請確認帳號名稱是否正確', 'error');
+            return;
+          }
+        } catch {
+          // 本機離線備援工單
+          let localTickets = JSON.parse(localStorage.getItem('pobi_reset_requests') || '[]');
+          const users = this.getUsers();
+          if (!users.some(x => x.username === u)) {
+            this.showResetAlert('找不到此使用者名稱，請確認帳號名稱大小寫是否正確', 'error');
+            return;
+          }
+          localTickets.unshift({
+            id: uid(),
+            username: u,
+            contact,
+            newPassword: np,
+            note,
+            status: 'pending',
+            createdAt: new Date().toISOString()
+          });
+          localStorage.setItem('pobi_reset_requests', JSON.stringify(localTickets));
+          this.showResetAlert('密碼重設申請已成功送出！請靜候管理員審核。', 'success');
+          showToast('密碼重設申請單已送出，管理員審核後即可使用新密碼登入！', 'success');
+          setTimeout(() => {
+            $('#pwdResetModal')?.classList.remove('active');
+            $('#pwdResetForm')?.reset();
+            this.clearResetAlert();
+          }, 1800);
+        }
+      };
+    }
+  },
+
+  showResetAlert(msg, type = 'error') {
+    const box = $('#pwdResetAlert');
+    if (!box) return;
+    box.style.display = 'block';
+    box.className = `auth-alert ${type}`;
+    box.textContent = msg;
+  },
+
+  clearResetAlert() {
+    const box = $('#pwdResetAlert');
+    if (!box) return;
+    box.style.display = 'none';
+    box.className = 'auth-alert';
+    box.textContent = '';
   },
 
   showAlert(msg, type = 'error') {
@@ -498,6 +592,7 @@ window.AdminManager = {
       }
       this.renderUsers();
       this.renderFeedback();
+      this.renderResetRequests();
       this.loadPublicApiConfig();
       $('#adminModal').classList.add('active');
     };
@@ -518,8 +613,12 @@ window.AdminManager = {
 
     // 搜尋使用者
     const searchEl = $('#adminUserSearch'); if (searchEl) searchEl.oninput = (e) => {
-      this.renderUsers(e.target.value.trim().toLowerCase());
+      this.renderUsers(e.target.value.trim());
     };
+
+    // 重新整理密碼重設工單
+    const el__btnRefreshResetList = $('#btnRefreshResetList');
+    if (el__btnRefreshResetList) el__btnRefreshResetList.onclick = () => this.renderResetRequests();
 
     // 清空回饋
     $('#adminClearAllFeedback').onclick = () => {
@@ -587,7 +686,7 @@ window.AdminManager = {
   renderUsers(filter = '') {
     const users = window.AuthManager.getUsers();
     const tbody = $('#adminUserTableBody');
-    const filtered = filter ? users.filter(u => u.username.toLowerCase().includes(filter)) : users;
+    const filtered = filter ? users.filter(u => u.username.includes(filter)) : users;
 
     $('#adminUserCount').textContent = users.length;
     tbody.innerHTML = '';
@@ -608,28 +707,9 @@ window.AdminManager = {
         <td><span class="admin-role-badge ${roleClass}">${roleLabel}</span></td>
         <td>${dateStr}</td>
         <td style="text-align:right">
-          <button class="btn-reset-pwd" style="padding:3px 8px;font-size:11px;margin-right:6px">重設密碼</button>
-          <button class="btn-del-user btn-danger" style="padding:3px 8px;font-size:11px">刪除</button>
+          <button class="btn-del-user btn-danger" style="padding:3px 8px;font-size:11px">刪除帳號</button>
         </td>
       `;
-
-      // 協助重設密碼
-      tr.querySelector('.btn-reset-pwd').onclick = () => {
-        const newPwd = prompt(`請輸入為帳號「${u.username}」設定的新密碼：`, '123456');
-        if (newPwd !== null) {
-          if (newPwd.length < 4) {
-            alert('密碼長度需至少 4 個字元');
-            return;
-          }
-          const all = window.AuthManager.getUsers();
-          const target = all.find(x => x.id === u.id);
-          if (target) {
-            target.password = newPwd;
-            window.AuthManager.saveUsers(all);
-            showToast(`已成功為「${u.username}」更新密碼`, 'success');
-          }
-        }
-      };
 
       // 刪除使用者
       tr.querySelector('.btn-del-user').onclick = () => {
@@ -645,6 +725,123 @@ window.AdminManager = {
           showToast(`已刪除使用者「${u.username}」`, 'info');
         }
       };
+
+      tbody.appendChild(tr);
+    });
+  },
+
+  async renderResetRequests() {
+    const tbody = $('#adminResetTableBody');
+    const badge = $('#adminResetBadge');
+    if (!tbody) return;
+
+    let requests = [];
+    try {
+      const res = await fetch('/api/auth/reset-list');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.requests) requests = data.requests;
+      }
+    } catch {}
+
+    if (!requests.length) {
+      try {
+        requests = JSON.parse(localStorage.getItem('pobi_reset_requests') || '[]');
+      } catch {}
+    }
+
+    const pendingCount = requests.filter(r => r.status === 'pending').length;
+    if (badge) {
+      badge.textContent = pendingCount;
+      badge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+    }
+
+    tbody.innerHTML = '';
+    if (!requests.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:18px">目前無任何密碼重設申請工單</td></tr>';
+      return;
+    }
+
+    requests.forEach(req => {
+      const tr = document.createElement('tr');
+      const dateStr = req.createdAt ? new Date(req.createdAt).toLocaleString() : '未知';
+      const statusLabel = req.status === 'pending' ? '待審核' : req.status === 'approved' ? '已核准更新' : '已駁回';
+      const statusClass = req.status === 'pending' ? 'warn' : req.status === 'approved' ? 'admin' : 'user';
+
+      let actionHtml = '';
+      if (req.status === 'pending') {
+        actionHtml = `
+          <button class="btn-approve-reset btn-primary" style="padding:3px 8px;font-size:11px;margin-right:6px">核准更新</button>
+          <button class="btn-reject-reset btn-danger" style="padding:3px 8px;font-size:11px">駁回</button>
+        `;
+      } else if (req.status === 'approved') {
+        actionHtml = `<span style="font-size:11px;color:#34d399">✓ 密碼已更新</span>`;
+      } else {
+        actionHtml = `<span style="font-size:11px;color:var(--text-muted)">✕ 已駁回申請</span>`;
+      }
+
+      tr.innerHTML = `
+        <td><strong>${esc(req.username)}</strong></td>
+        <td><span style="font-size:11px;color:var(--text-secondary)">${esc(req.contact)}</span>${req.note ? `<br><small style="color:var(--text-muted)">備註：${esc(req.note)}</small>` : ''}</td>
+        <td><code>••••••••</code> (已加密存檔)</td>
+        <td>${dateStr}</td>
+        <td><span class="admin-role-badge ${statusClass}">${statusLabel}</span></td>
+        <td style="text-align:right">${actionHtml}</td>
+      `;
+
+      const btnApprove = tr.querySelector('.btn-approve-reset');
+      if (btnApprove) {
+        btnApprove.onclick = async () => {
+          if (confirm(`確定要核准使用者「${req.username}」的密碼重設工單並立即更新其密碼嗎？`)) {
+            try {
+              const res = await fetch('/api/auth/reset-approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ requestId: req.id })
+              });
+              const data = await res.json();
+              if (res.ok && data.success) {
+                showToast(`已成功核准並更新「${req.username}」之新密碼！`, 'success');
+              } else {
+                showToast(data.error || '核准失敗', 'error');
+              }
+            } catch {
+              // 本機備援核准
+              const allUsers = window.AuthManager.getUsers();
+              const u = allUsers.find(x => x.username === req.username);
+              if (u) {
+                u.password = req.newPassword;
+                window.AuthManager.saveUsers(allUsers);
+              }
+              req.status = 'approved';
+              req.approvedAt = new Date().toISOString();
+              localStorage.setItem('pobi_reset_requests', JSON.stringify(requests));
+              showToast(`已成功核准並更新「${req.username}」之新密碼！`, 'success');
+            }
+            this.renderResetRequests();
+          }
+        };
+      }
+
+      const btnReject = tr.querySelector('.btn-reject-reset');
+      if (btnReject) {
+        btnReject.onclick = async () => {
+          if (confirm(`確定要駁回使用者「${req.username}」的密碼重設工單嗎？`)) {
+            try {
+              await fetch('/api/auth/reset-reject', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ requestId: req.id })
+              });
+            } catch {
+              req.status = 'rejected';
+              localStorage.setItem('pobi_reset_requests', JSON.stringify(requests));
+            }
+            showToast('已駁回該筆申請', 'info');
+            this.renderResetRequests();
+          }
+        };
+      }
 
       tbody.appendChild(tr);
     });

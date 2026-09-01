@@ -1595,6 +1595,57 @@ canvas {
           登入進入工作站
         </button>
       </div>
+
+      <div style="text-align:center;margin-top:12px">
+        <button type="button" id="btnOpenResetModal" style="background:none;border:none;color:#60a5fa;font-size:12px;cursor:pointer;text-decoration:underline">
+          忘記密碼？向管理員提出重設申請
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==================== 忘記密碼／重設申請彈窗 ==================== -->
+<div class="modal-backdrop" id="pwdResetModal">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header">
+      <h2>密碼重設申請單</h2>
+      <button id="btnCloseResetModal" style="background:transparent;border:0;color:var(--text-muted);padding:4px;min-height:auto;display:flex;align-items:center" title="關閉">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form class="modal-body" id="pwdResetForm" onsubmit="return false;" style="display:flex;flex-direction:column;gap:12px">
+      <div class="config-group" style="background:var(--primary-light);border:1px solid rgba(37,99,235,0.2);padding:10px 12px;font-size:11.5px;color:var(--text-secondary);line-height:1.5;border-radius:var(--radius-sm)">
+        <strong>📌 安全審核說明：</strong><br>
+        為防範帳號遭任意竄改，管理員無法隨意更改任何使用者的密碼。請填寫下方申請表單，管理員收到申請並審核無誤後方可為您核准更新！
+      </div>
+
+      <div class="auth-alert" id="pwdResetAlert" style="display:none"></div>
+
+      <div class="config-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <label for="resetUsername"><strong>申請重設的帳號名稱 (Username)</strong></label>
+        <input type="text" id="resetUsername" placeholder="請輸入欲重設之帳號 (注意大小寫)" required style="width:100%">
+      </div>
+
+      <div class="config-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <label for="resetContact"><strong>聯絡方式／身分驗證 (Email / 電話 / 通訊軟體)</strong></label>
+        <input type="text" id="resetContact" placeholder="例如：user@example.com 或 Line/Telegram" required style="width:100%">
+      </div>
+
+      <div class="config-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <label for="resetNewPassword"><strong>希望設定的新密碼 (New Password)</strong></label>
+        <input type="password" id="resetNewPassword" placeholder="請輸入新密碼 (至少 4 字元)" required style="width:100%">
+      </div>
+
+      <div class="config-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <label for="resetNote"><strong>申請說明或備註 (選填)</strong></label>
+        <textarea id="resetNote" placeholder="選填：說明遺失密碼情境或身分佐證..." style="width:100%;height:60px;resize:vertical;font-size:12px;padding:8px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-primary)"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+        <button type="button" id="btnCancelReset" style="padding:6px 14px">取消</button>
+        <button type="submit" id="btnSubmitReset" class="btn-primary" style="padding:6px 16px">送出審核申請</button>
+      </div>
     </form>
   </div>
 </div>
@@ -2224,7 +2275,17 @@ canvas {
         <div style="font-size:11px;color:var(--text-muted);line-height:1.5">
           金鑰僅儲存於您個人的瀏覽器端 (localStorage)，所有請求由前端直連 Google 官方伺服器，伺服器不留存任何記錄。
         </div>
-        <div style="display:flex;gap:8px">
+
+        <!-- 🔒 零存取隱私保證 -->
+        <div style="display:flex;align-items:flex-start;gap:8px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:var(--radius-sm);padding:10px 12px;margin-top:6px;font-size:11.5px;color:#34d399;line-height:1.5">
+          <svg style="width:18px;height:18px;flex-shrink:0;margin-top:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div>
+            <strong>🔒 零存取隱私承諾 (Zero-Access Privacy Guarantee)：</strong><br>
+            您的自備 API Key 僅以客戶端本機隔離方式儲存於您個人的瀏覽器 (localStorage)。<strong>本系統雲端伺服器、資料庫與管理員 100% 無法取得、查看或攔截您的金鑰。</strong>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:8px">
           <button id="btnSaveApiKey" class="btn-primary" style="flex:1">儲存金鑰</button>
           <button id="btnClearApiKey" class="btn-danger">清除</button>
         </div>
@@ -2342,6 +2403,11 @@ canvas {
         <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         使用者回饋中心
       </button>
+      <button class="admin-tab-btn" data-admin-pane="resets">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        密碼重設審核
+        <span class="badge" id="adminResetBadge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px">0</span>
+      </button>
       <button class="admin-tab-btn" data-admin-pane="api">
         <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         公用 API 管理
@@ -2391,7 +2457,34 @@ canvas {
         </div>
       </div>
 
-      <!-- 頁籤 3: 公用 API 管理 -->
+      <!-- 頁籤 3: 密碼重設申請審核 -->
+      <div class="admin-pane" id="pane-admin-resets">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:12px;color:var(--text-secondary)">
+            使用者提出的密碼重設工單（管理者僅能依工單核准，無法任意修改）：
+          </span>
+          <button id="btnRefreshResetList" class="btn-primary" style="padding:4px 10px;font-size:11px">重新整理工單</button>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>申請帳號</th>
+                <th>聯絡管道</th>
+                <th>欲設定新密碼</th>
+                <th>申請時間</th>
+                <th>狀態</th>
+                <th style="text-align:right">審核操作</th>
+              </tr>
+            </thead>
+            <tbody id="adminResetTableBody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:18px">目前無待審核的重設申請</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 頁籤 4: 公用 API 管理 -->
       <div class="admin-pane" id="pane-admin-api">
         <div class="config-group">
           <div class="config-group-title">Cloudflare 邊緣公用 API Key 設定</div>
@@ -2417,18 +2510,18 @@ canvas {
         </div>
       </div>
 
-      <!-- 頁籤 4: 資安與隱私審計 -->
+      <!-- 頁籤 5: 資安與隱私審計 -->
       <div class="admin-pane" id="pane-admin-privacy">
         <div class="privacy-card">
           <strong style="color:#ffffff;font-size:13px">隱私隔離與零信任金鑰架構規範</strong>
           <div>
-            1. <strong>嚴禁調閱私有金鑰</strong>：本系統架構設計嚴格限制管理者權限，使用者的個人自備 Gemini API Key 僅以本機客戶端隔離方式存在使用者個人瀏覽器中，不傳輸至伺服器，管理者控制台完全無法讀取或檢視。
+            1. <strong>嚴禁調閱私有金鑰 (Zero-Access)</strong>：使用者的個人自備 Gemini API Key 僅以本機客戶端隔離方式存在使用者個人瀏覽器內部，絕不傳輸至伺服器，管理者控制台完全無法讀取或檢視。
           </div>
           <div>
-            2. <strong>授權職責範圍</strong>：管理者僅具備「使用者生命週期管理 (刪除無效帳號)」、「協助忘記密碼之使用者重設密碼」、「檢閱使用者問題回饋」及「維護伺服器公用 API Key 健康度」之權限。
+            2. <strong>嚴格申請式密碼重設 (Ticket-Only Reset)</strong>：管理者完全無權任意竄改使用者密碼，僅能在使用者於登入頁面主動提交重設申請工單後，於本後台審核核准。
           </div>
           <div>
-            3. <strong>審計狀態</strong>：所有安全隔離規則已通過品質門禁驗證。
+            3. <strong>授權職責範圍</strong>：管理者僅具備「審核密碼重設申請」、「使用者生命週期管理 (刪除帳號)」、「檢閱問題回饋」及「維護公用 API 配額」之權限。
           </div>
         </div>
       </div>
@@ -2936,6 +3029,100 @@ window.AuthManager = {
     if (userBtn) {
       userBtn.onclick = () => $('#apiModal').classList.add('active');
     }
+
+    // 密碼重設工單申請彈窗事件
+    const btnOpenReset = $('#btnOpenResetModal');
+    if (btnOpenReset) {
+      btnOpenReset.onclick = () => {
+        $('#pwdResetModal')?.classList.add('active');
+        this.clearResetAlert();
+      };
+    }
+
+    const btnCloseReset = $('#btnCloseResetModal');
+    if (btnCloseReset) btnCloseReset.onclick = () => $('#pwdResetModal')?.classList.remove('active');
+    const btnCancelReset = $('#btnCancelReset');
+    if (btnCancelReset) btnCancelReset.onclick = () => $('#pwdResetModal')?.classList.remove('active');
+
+    const resetForm = $('#pwdResetForm');
+    if (resetForm) {
+      resetForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const u = $('#resetUsername')?.value.trim();
+        const contact = $('#resetContact')?.value.trim();
+        const np = $('#resetNewPassword')?.value;
+        const note = $('#resetNote')?.value.trim();
+
+        if (!u || !contact || !np || np.length < 4) {
+          this.showResetAlert('請完整填寫欲重設的帳號、聯絡方式與新密碼 (至少 4 字元)', 'error');
+          return;
+        }
+
+        this.showResetAlert('正在向雲端送出密碼重設申請單...', 'info');
+        try {
+          const res = await fetch('/api/auth/reset-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u, contact, newPassword: np, note })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            this.showResetAlert('密碼重設申請已成功送出！請靜候管理員在後台審核核准。', 'success');
+            showToast('密碼重設申請單已送出，管理員審核完成後即可使用新密碼登入！', 'success');
+            setTimeout(() => {
+              $('#pwdResetModal')?.classList.remove('active');
+              $('#pwdResetForm')?.reset();
+              this.clearResetAlert();
+            }, 1800);
+            return;
+          } else {
+            this.showResetAlert(data.error || '送出申請失敗，請確認帳號名稱是否正確', 'error');
+            return;
+          }
+        } catch {
+          // 本機離線備援工單
+          let localTickets = JSON.parse(localStorage.getItem('pobi_reset_requests') || '[]');
+          const users = this.getUsers();
+          if (!users.some(x => x.username === u)) {
+            this.showResetAlert('找不到此使用者名稱，請確認帳號名稱大小寫是否正確', 'error');
+            return;
+          }
+          localTickets.unshift({
+            id: uid(),
+            username: u,
+            contact,
+            newPassword: np,
+            note,
+            status: 'pending',
+            createdAt: new Date().toISOString()
+          });
+          localStorage.setItem('pobi_reset_requests', JSON.stringify(localTickets));
+          this.showResetAlert('密碼重設申請已成功送出！請靜候管理員審核。', 'success');
+          showToast('密碼重設申請單已送出，管理員審核後即可使用新密碼登入！', 'success');
+          setTimeout(() => {
+            $('#pwdResetModal')?.classList.remove('active');
+            $('#pwdResetForm')?.reset();
+            this.clearResetAlert();
+          }, 1800);
+        }
+      };
+    }
+  },
+
+  showResetAlert(msg, type = 'error') {
+    const box = $('#pwdResetAlert');
+    if (!box) return;
+    box.style.display = 'block';
+    box.className = `auth-alert ${type}`;
+    box.textContent = msg;
+  },
+
+  clearResetAlert() {
+    const box = $('#pwdResetAlert');
+    if (!box) return;
+    box.style.display = 'none';
+    box.className = 'auth-alert';
+    box.textContent = '';
   },
 
   showAlert(msg, type = 'error') {
@@ -3209,6 +3396,7 @@ window.AdminManager = {
       }
       this.renderUsers();
       this.renderFeedback();
+      this.renderResetRequests();
       this.loadPublicApiConfig();
       $('#adminModal').classList.add('active');
     };
@@ -3229,8 +3417,12 @@ window.AdminManager = {
 
     // 搜尋使用者
     const searchEl = $('#adminUserSearch'); if (searchEl) searchEl.oninput = (e) => {
-      this.renderUsers(e.target.value.trim().toLowerCase());
+      this.renderUsers(e.target.value.trim());
     };
+
+    // 重新整理密碼重設工單
+    const el__btnRefreshResetList = $('#btnRefreshResetList');
+    if (el__btnRefreshResetList) el__btnRefreshResetList.onclick = () => this.renderResetRequests();
 
     // 清空回饋
     $('#adminClearAllFeedback').onclick = () => {
@@ -3298,7 +3490,7 @@ window.AdminManager = {
   renderUsers(filter = '') {
     const users = window.AuthManager.getUsers();
     const tbody = $('#adminUserTableBody');
-    const filtered = filter ? users.filter(u => u.username.toLowerCase().includes(filter)) : users;
+    const filtered = filter ? users.filter(u => u.username.includes(filter)) : users;
 
     $('#adminUserCount').textContent = users.length;
     tbody.innerHTML = '';
@@ -3319,28 +3511,9 @@ window.AdminManager = {
         <td><span class="admin-role-badge ${roleClass}">${roleLabel}</span></td>
         <td>${dateStr}</td>
         <td style="text-align:right">
-          <button class="btn-reset-pwd" style="padding:3px 8px;font-size:11px;margin-right:6px">重設密碼</button>
-          <button class="btn-del-user btn-danger" style="padding:3px 8px;font-size:11px">刪除</button>
+          <button class="btn-del-user btn-danger" style="padding:3px 8px;font-size:11px">刪除帳號</button>
         </td>
       `;
-
-      // 協助重設密碼
-      tr.querySelector('.btn-reset-pwd').onclick = () => {
-        const newPwd = prompt(`請輸入為帳號「${u.username}」設定的新密碼：`, '123456');
-        if (newPwd !== null) {
-          if (newPwd.length < 4) {
-            alert('密碼長度需至少 4 個字元');
-            return;
-          }
-          const all = window.AuthManager.getUsers();
-          const target = all.find(x => x.id === u.id);
-          if (target) {
-            target.password = newPwd;
-            window.AuthManager.saveUsers(all);
-            showToast(`已成功為「${u.username}」更新密碼`, 'success');
-          }
-        }
-      };
 
       // 刪除使用者
       tr.querySelector('.btn-del-user').onclick = () => {
@@ -3356,6 +3529,123 @@ window.AdminManager = {
           showToast(`已刪除使用者「${u.username}」`, 'info');
         }
       };
+
+      tbody.appendChild(tr);
+    });
+  },
+
+  async renderResetRequests() {
+    const tbody = $('#adminResetTableBody');
+    const badge = $('#adminResetBadge');
+    if (!tbody) return;
+
+    let requests = [];
+    try {
+      const res = await fetch('/api/auth/reset-list');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.requests) requests = data.requests;
+      }
+    } catch {}
+
+    if (!requests.length) {
+      try {
+        requests = JSON.parse(localStorage.getItem('pobi_reset_requests') || '[]');
+      } catch {}
+    }
+
+    const pendingCount = requests.filter(r => r.status === 'pending').length;
+    if (badge) {
+      badge.textContent = pendingCount;
+      badge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+    }
+
+    tbody.innerHTML = '';
+    if (!requests.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:18px">目前無任何密碼重設申請工單</td></tr>';
+      return;
+    }
+
+    requests.forEach(req => {
+      const tr = document.createElement('tr');
+      const dateStr = req.createdAt ? new Date(req.createdAt).toLocaleString() : '未知';
+      const statusLabel = req.status === 'pending' ? '待審核' : req.status === 'approved' ? '已核准更新' : '已駁回';
+      const statusClass = req.status === 'pending' ? 'warn' : req.status === 'approved' ? 'admin' : 'user';
+
+      let actionHtml = '';
+      if (req.status === 'pending') {
+        actionHtml = `
+          <button class="btn-approve-reset btn-primary" style="padding:3px 8px;font-size:11px;margin-right:6px">核准更新</button>
+          <button class="btn-reject-reset btn-danger" style="padding:3px 8px;font-size:11px">駁回</button>
+        `;
+      } else if (req.status === 'approved') {
+        actionHtml = `<span style="font-size:11px;color:#34d399">✓ 密碼已更新</span>`;
+      } else {
+        actionHtml = `<span style="font-size:11px;color:var(--text-muted)">✕ 已駁回申請</span>`;
+      }
+
+      tr.innerHTML = `
+        <td><strong>${esc(req.username)}</strong></td>
+        <td><span style="font-size:11px;color:var(--text-secondary)">${esc(req.contact)}</span>${req.note ? `<br><small style="color:var(--text-muted)">備註：${esc(req.note)}</small>` : ''}</td>
+        <td><code>••••••••</code> (已加密存檔)</td>
+        <td>${dateStr}</td>
+        <td><span class="admin-role-badge ${statusClass}">${statusLabel}</span></td>
+        <td style="text-align:right">${actionHtml}</td>
+      `;
+
+      const btnApprove = tr.querySelector('.btn-approve-reset');
+      if (btnApprove) {
+        btnApprove.onclick = async () => {
+          if (confirm(`確定要核准使用者「${req.username}」的密碼重設工單並立即更新其密碼嗎？`)) {
+            try {
+              const res = await fetch('/api/auth/reset-approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ requestId: req.id })
+              });
+              const data = await res.json();
+              if (res.ok && data.success) {
+                showToast(`已成功核准並更新「${req.username}」之新密碼！`, 'success');
+              } else {
+                showToast(data.error || '核准失敗', 'error');
+              }
+            } catch {
+              // 本機備援核准
+              const allUsers = window.AuthManager.getUsers();
+              const u = allUsers.find(x => x.username === req.username);
+              if (u) {
+                u.password = req.newPassword;
+                window.AuthManager.saveUsers(allUsers);
+              }
+              req.status = 'approved';
+              req.approvedAt = new Date().toISOString();
+              localStorage.setItem('pobi_reset_requests', JSON.stringify(requests));
+              showToast(`已成功核准並更新「${req.username}」之新密碼！`, 'success');
+            }
+            this.renderResetRequests();
+          }
+        };
+      }
+
+      const btnReject = tr.querySelector('.btn-reject-reset');
+      if (btnReject) {
+        btnReject.onclick = async () => {
+          if (confirm(`確定要駁回使用者「${req.username}」的密碼重設工單嗎？`)) {
+            try {
+              await fetch('/api/auth/reset-reject', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ requestId: req.id })
+              });
+            } catch {
+              req.status = 'rejected';
+              localStorage.setItem('pobi_reset_requests', JSON.stringify(requests));
+            }
+            showToast('已駁回該筆申請', 'info');
+            this.renderResetRequests();
+          }
+        };
+      }
 
       tbody.appendChild(tr);
     });

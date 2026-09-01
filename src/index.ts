@@ -402,6 +402,192 @@ export default {
       );
     }
 
+    // POST /api/auth/reset-request (使用者送出密碼重設申請)
+    if (url.pathname === "/api/auth/reset-request" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as { username?: string; contact?: string; newPassword?: string; note?: string };
+        const username = body.username ? String(body.username).trim() : "";
+        const contact = body.contact ? String(body.contact).trim() : "";
+        const newPassword = body.newPassword ? String(body.newPassword) : "";
+        const note = body.note ? String(body.note).trim() : "";
+
+        if (!username || !newPassword || newPassword.length < 4) {
+          return new Response(
+            JSON.stringify({ success: false, error: "請填寫正確的使用者名稱與新密碼 (至少 4 字元)" }),
+            { status: 400, headers: corsHeaders() }
+          );
+        }
+
+        const user = await getUserFromStore(username, env);
+        if (!user) {
+          return new Response(
+            JSON.stringify({ success: false, error: "找不到此使用者名稱，請確認帳號大小寫是否正確！" }),
+            { status: 404, headers: corsHeaders() }
+          );
+        }
+
+        let reqList: any[] = [];
+        if (env && env.POBI_KV) {
+          try {
+            reqList = (await env.POBI_KV.get("pobi_reset_requests", "json")) || [];
+          } catch (e) {}
+        }
+
+        const newTicket = {
+          id: crypto.randomUUID(),
+          username: user.username,
+          contact: contact || "未提供",
+          newPassword,
+          note: note || "",
+          status: "pending",
+          createdAt: new Date().toISOString(),
+        };
+
+        reqList.unshift(newTicket);
+        if (reqList.length > 100) reqList = reqList.slice(0, 100);
+
+        if (env && env.POBI_KV) {
+          try {
+            await env.POBI_KV.put("pobi_reset_requests", JSON.stringify(reqList));
+          } catch (e) {}
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: "密碼重設申請已成功送出！請靜候管理員在後台審核核准。" }),
+          { headers: corsHeaders() }
+        );
+      } catch (err: any) {
+        return new Response(
+          JSON.stringify({ success: false, error: err.message || "申請失敗" }),
+          { status: 500, headers: corsHeaders() }
+        );
+      }
+    }
+
+    // GET /api/auth/reset-list (管理員讀取重設申請列表)
+    if (url.pathname === "/api/auth/reset-list" && request.method === "GET") {
+      try {
+        let reqList: any[] = [];
+        if (env && env.POBI_KV) {
+          try {
+            reqList = (await env.POBI_KV.get("pobi_reset_requests", "json")) || [];
+          } catch (e) {}
+        }
+        return new Response(
+          JSON.stringify({ success: true, requests: reqList }),
+          { headers: corsHeaders() }
+        );
+      } catch (err: any) {
+        return new Response(
+          JSON.stringify({ success: false, error: err.message || "讀取失敗" }),
+          { status: 500, headers: corsHeaders() }
+        );
+      }
+    }
+
+    // POST /api/auth/reset-approve (管理員審核並正式更新密碼)
+    if (url.pathname === "/api/auth/reset-approve" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as { requestId?: string };
+        const requestId = body.requestId;
+
+        let reqList: any[] = [];
+        if (env && env.POBI_KV) {
+          try {
+            reqList = (await env.POBI_KV.get("pobi_reset_requests", "json")) || [];
+          } catch (e) {}
+        }
+
+        const ticket = reqList.find((r: any) => r.id === requestId);
+        if (!ticket) {
+          return new Response(
+            JSON.stringify({ success: false, error: "找不到該筆申請工單" }),
+            { status: 404, headers: corsHeaders() }
+          );
+        }
+
+        if (ticket.status !== "pending") {
+          return new Response(
+            JSON.stringify({ success: false, error: `該申請工單已被處理過 (狀態: ${ticket.status})` }),
+            { status: 400, headers: corsHeaders() }
+          );
+        }
+
+        const user = await getUserFromStore(ticket.username, env);
+        if (!user) {
+          return new Response(
+            JSON.stringify({ success: false, error: "找不到欲修改的使用者帳號" }),
+            { status: 404, headers: corsHeaders() }
+          );
+        }
+
+        // 正式依據工單核准修改雲端密碼
+        user.password = ticket.newPassword;
+        await saveUserToStore(user, env);
+
+        ticket.status = "approved";
+        ticket.approvedAt = new Date().toISOString();
+
+        if (env && env.POBI_KV) {
+          try {
+            await env.POBI_KV.put("pobi_reset_requests", JSON.stringify(reqList));
+          } catch (e) {}
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: `已成功核准並將使用者「${user.username}」之密碼更新完成！` }),
+          { headers: corsHeaders() }
+        );
+      } catch (err: any) {
+        return new Response(
+          JSON.stringify({ success: false, error: err.message || "核准失敗" }),
+          { status: 500, headers: corsHeaders() }
+        );
+      }
+    }
+
+    // POST /api/auth/reset-reject (管理員駁回重設申請)
+    if (url.pathname === "/api/auth/reset-reject" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as { requestId?: string };
+        const requestId = body.requestId;
+
+        let reqList: any[] = [];
+        if (env && env.POBI_KV) {
+          try {
+            reqList = (await env.POBI_KV.get("pobi_reset_requests", "json")) || [];
+          } catch (e) {}
+        }
+
+        const ticket = reqList.find((r: any) => r.id === requestId);
+        if (!ticket) {
+          return new Response(
+            JSON.stringify({ success: false, error: "找不到該筆申請工單" }),
+            { status: 404, headers: corsHeaders() }
+          );
+        }
+
+        ticket.status = "rejected";
+        ticket.rejectedAt = new Date().toISOString();
+
+        if (env && env.POBI_KV) {
+          try {
+            await env.POBI_KV.put("pobi_reset_requests", JSON.stringify(reqList));
+          } catch (e) {}
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: "已成功駁回該筆密碼重設申請" }),
+          { headers: corsHeaders() }
+        );
+      } catch (err: any) {
+        return new Response(
+          JSON.stringify({ success: false, error: err.message || "駁回失敗" }),
+          { status: 500, headers: corsHeaders() }
+        );
+      }
+    }
+
     // 清空所有使用者 (需求 1)
     if (url.pathname === "/api/auth/clear-all" && request.method === "POST") {
       try {
