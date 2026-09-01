@@ -47,14 +47,29 @@ function canvasToBlob(canvas, type = 'image/png', quality = 0.92) {
 }
 
 // ==================== 身份驗證與帳號管理器 (AuthManager) ====================
+// ==================== 身份驗證與帳號管理器 (AuthManager) ====================
 window.AuthManager = {
   currentUser: null,
   mode: 'login', // 'login' | 'register'
 
   init() {
+    this.checkOneTimeUserClear();
     this.getUsers(); // 確保預設管理員與開發者種子帳號存在
     this.checkSession();
     this.bindEvents();
+  },
+
+  checkOneTimeUserClear() {
+    // 依需求 1：清空所有既有使用者快取與舊資料
+    if (!localStorage.getItem('pobi_v2_users_cleared')) {
+      localStorage.removeItem('pobi_users');
+      localStorage.removeItem('pobi_session');
+      sessionStorage.removeItem('pobi_session');
+      try {
+        fetch('/api/auth/clear-all', { method: 'POST' }).catch(() => {});
+      } catch {}
+      localStorage.setItem('pobi_v2_users_cleared', 'true');
+    }
   },
 
   getUsers() {
@@ -63,13 +78,13 @@ window.AuthManager = {
       // 確保跨裝置、本機與雲端唯一：全系統僅存在唯一 developer 與 admin 帳號
       const seen = new Set();
       users = users.filter(u => {
-        const uname = (u.username || '').toLowerCase();
+        const uname = u.username || '';
         if (seen.has(uname)) return false;
         seen.add(uname);
         return true;
       });
 
-      if (!users.some(u => u.username.toLowerCase() === 'admin')) {
+      if (!users.some(u => u.username === 'admin')) {
         users.unshift({
           id: 'admin-root',
           username: 'admin',
@@ -78,7 +93,7 @@ window.AuthManager = {
           createdAt: new Date().toISOString()
         });
       }
-      if (!users.some(u => u.username.toLowerCase() === 'developer')) {
+      if (!users.some(u => u.username === 'developer')) {
         users.push({
           id: 'dev-root',
           username: 'developer',
@@ -142,6 +157,10 @@ window.AuthManager = {
       if (adminBtn) adminBtn.style.display = 'inline-flex';
     } else {
       if (adminBtn) adminBtn.style.display = 'none';
+    }
+
+    if (window.ApiManager && window.ApiManager.checkServerStatus) {
+      window.ApiManager.checkServerStatus();
     }
   },
 
@@ -223,6 +242,9 @@ window.AuthManager = {
         if (data.success && data.user) {
           this.currentUser = data.user;
           localStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
+          if (data.quota && window.ApiManager) {
+            window.ApiManager.updateQuotaFromLogin(data.quota);
+          }
           this.showAlert('開發者管理員帳號 (developer) 已快速開通並雲端同步登入！', 'success');
           setTimeout(() => {
             this.unlockApp();
@@ -236,7 +258,7 @@ window.AuthManager = {
 
     // 本機備援
     const users = this.getUsers();
-    let dev = users.find(u => u.username.toLowerCase() === 'developer');
+    let dev = users.find(u => u.username === 'developer');
     if (!dev) {
       dev = {
         id: 'dev-root',
@@ -309,9 +331,14 @@ window.AuthManager = {
           const storage = remember ? localStorage : sessionStorage;
           storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
-          // 同步到本地備份
+          // 登入時即時同步配額 (需求 3)
+          if (data.quota && window.ApiManager) {
+            window.ApiManager.updateQuotaFromLogin(data.quota);
+          }
+
+          // 同步到本地備份 (嚴格大小寫)
           const users = this.getUsers();
-          if (!users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
+          if (!users.some(x => x.username === u)) {
             users.push({ id: data.user.id, username: u, password: p, role: data.user.role, createdAt: new Date().toISOString() });
             this.saveUsers(users);
           }
@@ -328,14 +355,14 @@ window.AuthManager = {
           return;
         }
       } catch {
-        // 離線/本地備援註冊
+        // 離線/本地備援註冊 (嚴格大小寫)
         const users = this.getUsers();
-        if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
-          this.showAlert('此使用者名稱已被註冊，請切換至「會員登入」或更換一個未被使用的名稱');
+        if (users.some(x => x.username === u)) {
+          this.showAlert('此使用者名稱已被註冊，請切換至「會員登入」或更換一個未被使用的名稱 (注意大小寫)');
           return;
         }
 
-        const role = (u.toLowerCase() === 'admin' || u.toLowerCase() === 'developer') ? 'admin' : 'user';
+        const role = (u === 'admin' || u === 'developer') ? 'admin' : 'user';
         const newUser = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
         users.push(newUser);
         this.saveUsers(users);
@@ -366,9 +393,14 @@ window.AuthManager = {
           const storage = remember ? localStorage : sessionStorage;
           storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
-          // 同步到本地備份
+          // 登入時即時同步配額 (需求 3)
+          if (data.quota && window.ApiManager) {
+            window.ApiManager.updateQuotaFromLogin(data.quota);
+          }
+
+          // 同步到本地備份 (嚴格大小寫)
           const users = this.getUsers();
-          let localUser = users.find(x => x.username.toLowerCase() === u.toLowerCase());
+          let localUser = users.find(x => x.username === u);
           if (!localUser) {
             users.push({ id: data.user.id, username: u, password: p, role: data.user.role, createdAt: new Date().toISOString() });
             this.saveUsers(users);
@@ -381,20 +413,20 @@ window.AuthManager = {
           }, 350);
           return;
         } else {
-          this.showAlert(data.error || '登入失敗，請確認帳號與密碼');
+          this.showAlert(data.error || '登入失敗，請確認帳號與密碼 (注意大小寫)');
           return;
         }
       } catch {
-        // 離線/本地備援登入
+        // 離線/本地備援登入 (嚴格大小寫)
         const users = this.getUsers();
-        let user = users.find(x => x.username.toLowerCase() === u.toLowerCase());
+        let user = users.find(x => x.username === u);
         if (user) {
           if (user.password !== p) {
-            this.showAlert('密碼錯誤，請重新確認');
+            this.showAlert('密碼錯誤，請確認英文字母大小寫');
             return;
           }
         } else {
-          this.showAlert('找不到此使用者名稱，請切換至「註冊新帳號」或點擊下方「一次性申請開通開發者帳號」');
+          this.showAlert('找不到此使用者名稱，請確認大小寫或切換至「註冊新帳號」');
           return;
         }
 
@@ -656,7 +688,7 @@ window.AdminManager = {
 
       // 刪除使用者
       tr.querySelector('.btn-del-user').onclick = () => {
-        if (u.username.toLowerCase() === 'admin') {
+        if (u.username === 'admin' || u.username === 'developer') {
           alert('無法刪除系統預設管理者帳號');
           return;
         }
@@ -664,7 +696,7 @@ window.AdminManager = {
           let all = window.AuthManager.getUsers();
           all = all.filter(x => x.id !== u.id);
           window.AuthManager.saveUsers(all);
-          this.renderUsers($('#adminUserSearch').value.trim().toLowerCase());
+          this.renderUsers($('#adminUserSearch')?.value.trim() || '');
           showToast(`已刪除使用者「${u.username}」`, 'info');
         }
       };
@@ -719,15 +751,66 @@ window.AdminManager = {
 };
 
 
-// ==================== API Key 與配額管理器 ====================
+// ==================== API Key、用量追蹤與配額儀表板 (ApiManager) ====================
 window.ApiManager = {
   userKey: localStorage.getItem('user_gemini_api_key') || '',
-  serverStatus: { hasPublicApi: false, remainingToday: 0 },
+  globalQuota: { max: 200, used: 0, remaining: 200, usedPercent: 0, remainingPercent: 100, resetAt: Date.now() + 5 * 3600 * 1000 },
+  userQuota: { max: 5, remaining: 5, used: 0, usedPercent: 0, remainingPercent: 100, resetAt: Date.now() + 5 * 3600 * 1000 },
+  hasPublicApi: false,
+  timerId: null,
 
   init() {
+    this.bindEvents();
     this.checkServerStatus();
-    this.updateBadge();
-    const el__btnSaveApiKey = $('#btnSaveApiKey'); if (el__btnSaveApiKey) el__btnSaveApiKey.onclick = () => {
+    this.renderDashboard();
+    // 每 30 秒自動更新倒數計時與儀表
+    if (this.timerId) clearInterval(this.timerId);
+    this.timerId = setInterval(() => this.updateCountdowns(), 30000);
+  },
+
+  getPrivateUsage() {
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const data = JSON.parse(localStorage.getItem('pobi_private_api_usage') || '{}');
+      if (data.date === today) return data.count || 0;
+    } catch {}
+    return 0;
+  },
+
+  recordPrivateUsage() {
+    const today = new Date().toISOString().slice(0, 10);
+    const count = this.getPrivateUsage() + 1;
+    localStorage.setItem('pobi_private_api_usage', JSON.stringify({ date: today, count }));
+    this.renderDashboard();
+  },
+
+  formatCountdown(targetTimestamp) {
+    if (!targetTimestamp) return '計算中...';
+    const diff = targetTimestamp - Date.now();
+    if (diff <= 0) return '即將重置';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return `${hours} 小時 ${mins} 分後重置`;
+    return `${mins} 分鐘後重置`;
+  },
+
+  updateQuotaFromLogin(quotaData) {
+    if (!quotaData) return;
+    if (quotaData.global) this.globalQuota = { ...this.globalQuota, ...quotaData.global };
+    if (quotaData.user) this.userQuota = { ...this.userQuota, ...quotaData.user };
+    this.renderDashboard();
+  },
+
+  updateQuotaFromResponse(quotaData) {
+    if (!quotaData) return;
+    if (quotaData.global) this.globalQuota = { ...this.globalQuota, ...quotaData.global };
+    if (quotaData.user) this.userQuota = { ...this.userQuota, ...quotaData.user };
+    this.renderDashboard();
+  },
+
+  bindEvents() {
+    const el__btnSaveApiKey = $('#btnSaveApiKey');
+    if (el__btnSaveApiKey) el__btnSaveApiKey.onclick = () => {
       const k = $('#inputUserApiKey').value.trim();
       if (!k) {
         showToast('請輸入有效的 Gemini API Key', 'warning');
@@ -735,82 +818,210 @@ window.ApiManager = {
       }
       this.userKey = k;
       localStorage.setItem('user_gemini_api_key', k);
-      showToast('自備 API Key 儲存成功，已啟用無限制模式', 'success');
-      this.updateBadge();
+      showToast('自備專屬 API Key 儲存成功，已啟用無限制模式', 'success');
+      this.renderDashboard();
     };
-    const el__btnClearApiKey = $('#btnClearApiKey'); if (el__btnClearApiKey) el__btnClearApiKey.onclick = () => {
+
+    const el__btnClearApiKey = $('#btnClearApiKey');
+    if (el__btnClearApiKey) el__btnClearApiKey.onclick = () => {
       this.userKey = '';
       localStorage.removeItem('user_gemini_api_key');
       $('#inputUserApiKey').value = '';
-      showToast('已清除自備金鑰，切換為公用配額模式', 'info');
-      this.updateBadge();
+      showToast('已清除自備金鑰，切換為 5 小時公用配額模式', 'info');
+      this.renderDashboard();
     };
-    const el__btnToggleKeyVisibility = $('#btnToggleKeyVisibility'); if (el__btnToggleKeyVisibility) el__btnToggleKeyVisibility.onclick = () => {
+
+    const el__btnToggleKeyVisibility = $('#btnToggleKeyVisibility');
+    if (el__btnToggleKeyVisibility) el__btnToggleKeyVisibility.onclick = () => {
       const inp = $('#inputUserApiKey');
       if (inp.type === 'password') {
         inp.type = 'text';
-        $('#btnToggleKeyVisibility').textContent = '隱藏';
+        el__btnToggleKeyVisibility.textContent = '隱藏';
       } else {
         inp.type = 'password';
-        $('#btnToggleKeyVisibility').textContent = '顯示';
+        el__btnToggleKeyVisibility.textContent = '顯示';
       }
     };
+
     if (this.userKey) {
       $('#inputUserApiKey').value = this.userKey;
     }
+
+    // 上限警示彈窗按鈕 (需求 4)
+    const el__btnCloseQuotaAlert = $('#btnCloseQuotaAlert');
+    if (el__btnCloseQuotaAlert) el__btnCloseQuotaAlert.onclick = () => $('#quotaAlertModal')?.classList.remove('active');
+    const el__btnQuotaAlertClose = $('#btnQuotaAlertClose');
+    if (el__btnQuotaAlertClose) el__btnQuotaAlertClose.onclick = () => $('#quotaAlertModal')?.classList.remove('active');
+    const el__btnQuotaAlertOpenKey = $('#btnQuotaAlertOpenKey');
+    if (el__btnQuotaAlertOpenKey) el__btnQuotaAlertOpenKey.onclick = () => {
+      $('#quotaAlertModal')?.classList.remove('active');
+      $('#apiModal')?.classList.add('active');
+    };
   },
 
   async checkServerStatus() {
+    const currentUsername = window.AuthManager?.currentUser?.username || '';
     if (window.location.protocol === 'file:') {
-      this.serverStatus = {
-        hasPublicApi: false,
-        dailyLimitPerUser: 5,
-        remainingToday: 0,
-        isAvailable: true
-      };
-      const srvKey = $('#srvKeyStatus');
-      if (srvKey) srvKey.textContent = '本機單機模式 (可使用離線 OCR 或輸入個人金鑰)';
-      const srvQuota = $('#srvQuotaLeft');
-      if (srvQuota) srvQuota.textContent = '無限制 (離線/自備)';
-      this.updateBadge();
+      this.hasPublicApi = false;
+      this.renderDashboard();
       return;
     }
 
     try {
-      const res = await fetch('/api/status');
+      const res = await fetch(`/api/status?username=${encodeURIComponent(currentUsername)}`, {
+        headers: { 'x-username': encodeURIComponent(currentUsername) }
+      });
       const ct = res.headers.get('content-type') || '';
       if (res.ok && ct.includes('application/json')) {
-        this.serverStatus = await res.json();
-        const srvKey = $('#srvKeyStatus');
-        if (srvKey) srvKey.textContent = this.serverStatus.hasPublicApi ? '已啟用 (伺服器就緒)' : '未配置 (請使用離線 OCR 或輸入個人金鑰)';
-        const srvQuota = $('#srvQuotaLeft');
-        if (srvQuota) srvQuota.textContent = this.serverStatus.hasPublicApi ? this.serverStatus.remainingToday : 0;
-      } else {
-        const srvKey = $('#srvKeyStatus');
-        if (srvKey) srvKey.textContent = '純前端模式 (請使用離線 OCR 或貼上個人金鑰)';
+        const data = await res.json();
+        this.hasPublicApi = Boolean(data.hasPublicApi);
+        if (data.global) this.globalQuota = { ...this.globalQuota, ...data.global };
+        if (data.user) this.userQuota = { ...this.userQuota, ...data.user };
       }
-    } catch (e) {
-      const srvKey = $('#srvKeyStatus');
-      if (srvKey) srvKey.textContent = '離線 / 本地單機模式';
-    }
-    this.updateBadge();
+    } catch (e) {}
+    this.renderDashboard();
   },
 
-  updateBadge() {
+  updateCountdowns() {
+    const gCd = $('#globalQuotaCountdown');
+    const uCd = $('#userQuotaCountdown');
+    if (gCd && this.globalQuota?.resetAt) gCd.textContent = this.formatCountdown(this.globalQuota.resetAt);
+    if (uCd && this.userQuota?.resetAt) uCd.textContent = this.formatCountdown(this.userQuota.resetAt);
+  },
+
+  renderDashboard() {
+    // 頂部導航 Badge
     const b = $('#quotaText');
     const dot = $('#quotaDot');
-    if (!b || !dot) return;
+    const currentUsername = window.AuthManager?.currentUser?.username || '未登入';
+    const srvUser = $('#srvAccountName');
+    if (srvUser) srvUser.textContent = currentUsername;
+
+    const srvKey = $('#srvKeyStatus');
+    if (srvKey) {
+      srvKey.textContent = this.hasPublicApi ? '已啟用 (伺服器就緒)' : '未配置 (請使用離線 OCR 或輸入個人金鑰)';
+    }
 
     if (this.userKey) {
-      b.textContent = '專屬金鑰已啟用';
-      dot.className = 'status-dot blue';
-    } else if (this.serverStatus.hasPublicApi) {
-      b.textContent = `公用剩餘: ${this.serverStatus.remainingToday} 次`;
-      dot.className = 'status-dot green';
+      if (b) b.textContent = '專屬金鑰已啟用';
+      if (dot) dot.className = 'status-dot blue';
+    } else if (this.hasPublicApi) {
+      const uRem = this.userQuota.remaining ?? 5;
+      const uPct = this.userQuota.remainingPercent ?? ((uRem / 5) * 100);
+      if (b) b.textContent = `公用剩餘: ${uRem}次 (${uPct.toFixed(0)}%)`;
+      if (dot) {
+        if (uRem <= 0) dot.className = 'status-dot danger';
+        else if (uRem <= 2) dot.className = 'status-dot yellow';
+        else dot.className = 'status-dot green';
+      }
     } else {
-      b.textContent = '需設定金鑰';
-      dot.className = 'status-dot yellow';
+      if (b) b.textContent = '需設定金鑰';
+      if (dot) dot.className = 'status-dot yellow';
     }
+
+    // 1. 全域公用池進度條與數據
+    const gMax = this.globalQuota.max || 200;
+    const gUsed = this.globalQuota.used || 0;
+    const gRem = Math.max(0, gMax - gUsed);
+    const gRemPct = Number(((gRem / gMax) * 100).toFixed(1));
+    const gUsedPct = Number(((gUsed / gMax) * 100).toFixed(1));
+
+    const elGBar = $('#globalQuotaBar');
+    const elGText = $('#globalQuotaText');
+    const elGBadge = $('#globalQuotaBadge');
+    const elGCd = $('#globalQuotaCountdown');
+
+    if (elGBar) {
+      elGBar.style.width = `${gRemPct}%`;
+      elGBar.className = gRem <= 0 ? 'quota-progress-fill danger' : gRemPct <= 20 ? 'quota-progress-fill warn' : 'quota-progress-fill';
+    }
+    if (elGText) elGText.textContent = `全域剩餘：${gRem} / ${gMax} 次 (${gRemPct}%) ｜ 已用 ${gUsedPct}%`;
+    if (elGBadge) {
+      elGBadge.textContent = `${gRemPct}% 剩餘`;
+      elGBadge.className = gRem <= 0 ? 'quota-badge danger' : gRemPct <= 20 ? 'quota-badge warn' : 'quota-badge';
+    }
+    if (elGCd) elGCd.textContent = this.formatCountdown(this.globalQuota.resetAt);
+
+    // 2. 個人 5 小時額度進度條與數據
+    const uMax = this.userQuota.max || 5;
+    const uRem = this.userQuota.remaining ?? 5;
+    const uRemPct = Number(((uRem / uMax) * 100).toFixed(1));
+    const uUsed = uMax - uRem;
+
+    const elUBar = $('#userQuotaBar');
+    const elUText = $('#userQuotaText');
+    const elUBadge = $('#userQuotaBadge');
+    const elUCd = $('#userQuotaCountdown');
+
+    if (elUBar) {
+      elUBar.style.width = `${uRemPct}%`;
+      elUBar.className = uRem <= 0 ? 'quota-progress-fill danger' : uRem <= 1 ? 'quota-progress-fill warn' : 'quota-progress-fill user-fill';
+    }
+    if (elUText) elUText.textContent = `個人剩餘：${uRem} / ${uMax} 次 (${uRemPct}%) ｜ 已用 ${uUsed} 次`;
+    if (elUBadge) {
+      elUBadge.textContent = `${uRem} / ${uMax} 次 (${uRemPct}%)`;
+      elUBadge.className = uRem <= 0 ? 'quota-badge danger' : uRem <= 1 ? 'quota-badge warn' : 'quota-badge';
+    }
+    if (elUCd) elUCd.textContent = this.formatCountdown(this.userQuota.resetAt);
+
+    // 3. 個人自備金鑰進度條與數據
+    const privateUsage = this.getPrivateUsage();
+    const privateRefMax = 1500;
+    const privatePct = Number(((privateUsage / privateRefMax) * 100).toFixed(1));
+
+    const elPBar = $('#privateKeyBar');
+    const elPText = $('#privateKeyText');
+    const elPBadge = $('#privateKeyBadge');
+    const elPPct = $('#privateKeyPercent');
+    const elPDot = $('#privateKeyDot');
+
+    if (this.userKey) {
+      if (elPDot) elPDot.className = 'status-dot blue';
+      if (elPBadge) {
+        elPBadge.textContent = '已啟用專屬金鑰';
+        elPBadge.className = 'quota-badge blue';
+      }
+      if (elPBar) elPBar.style.width = `${Math.min(100, privatePct)}%`;
+      if (elPText) elPText.textContent = `今日已調用：${privateUsage} 次 (參考每日上限 1500 次)`;
+      if (elPPct) elPPct.textContent = `${privatePct}% 已用`;
+    } else {
+      if (elPDot) elPDot.className = 'status-dot yellow';
+      if (elPBadge) {
+        elPBadge.textContent = '未填入金鑰';
+        elPBadge.className = 'quota-badge warn';
+      }
+      if (elPBar) elPBar.style.width = '0%';
+      if (elPText) elPText.textContent = '未設定個人金鑰 (目前使用 5 小時公用額度)';
+      if (elPPct) elPPct.textContent = '0.0% 已用';
+    }
+  },
+
+  showQuotaExceededWarning({ type, resetAt, message }) {
+    const modal = $('#quotaAlertModal');
+    if (!modal) {
+      showToast(message || 'API 配額已用盡，請稍候重試或輸入個人金鑰', 'error');
+      return;
+    }
+
+    const titleEl = $('#quotaAlertHeader');
+    const bannerEl = $('#quotaAlertBanner');
+    const descEl = $('#quotaAlertDesc');
+    const cdEl = $('#quotaAlertCountdown');
+
+    if (type === 'private') {
+      if (titleEl) titleEl.textContent = '個人金鑰 Google 官方上限提醒';
+      if (bannerEl) bannerEl.textContent = '⚠️ 您的個人 Gemini API Key 已達 Google 官方速率或配額上限 (Rate Limit / Quota Exceeded)';
+      if (descEl) descEl.textContent = 'Google API 官方伺服器暫時拒絕請求 (HTTP 429 Too Many Requests)。建議稍候 1~2 分鐘後重試，或前往 Google AI Studio 檢查配額狀態，亦可使用純本地 Tesseract 離線引擎！';
+      if (cdEl) cdEl.textContent = '請稍候 1~2 分鐘重試';
+    } else {
+      const cdStr = this.formatCountdown(resetAt || this.userQuota.resetAt);
+      if (titleEl) titleEl.textContent = '公用 API 配額上限提醒';
+      if (bannerEl) bannerEl.textContent = '⚠️ 5 小時公用免費配額已耗盡 (每 5 小時自動重置 5 次)';
+      if (descEl) descEl.textContent = `您當前帳號的公用配額 (${this.userQuota.max || 5} 次) 已使用完畢。系統將在每 5 小時循環重置。建議您立即在設定中貼上 Google 免費個人金鑰解鎖無限制調用！`;
+      if (cdEl) cdEl.textContent = cdStr;
+    }
+
+    modal.classList.add('active');
   },
 
   async callGeminiVision(base64Image, prompt) {
@@ -823,9 +1034,10 @@ window.ApiManager = {
       }]
     };
 
+    // 1. 使用者自備專屬金鑰
     if (this.userKey && this.userKey.trim().length > 0) {
       const cleanKey = this.userKey.trim();
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(cleanKey)}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(cleanKey)}`;
       try {
         const res = await fetch(url, {
           method: 'POST',
@@ -835,29 +1047,47 @@ window.ApiManager = {
           },
           body: JSON.stringify(payload)
         });
+
+        if (res.status === 429) {
+          const errData = await res.json().catch(() => ({}));
+          this.showQuotaExceededWarning({ type: 'private', message: errData.error?.message });
+          throw new Error('您的個人 Google Gemini API Key 已達官方調用上限或速率限制 (Resource Exhausted / Rate Limit)。請稍候 1~2 分鐘後重試！');
+        }
+
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           const errMsg = errData.error?.message || `HTTP ${res.status}`;
+          if (errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('Quota exceeded') || errMsg.includes('rate limit')) {
+            this.showQuotaExceededWarning({ type: 'private', message: errMsg });
+          }
           throw new Error(`Google Gemini 官方回傳錯誤: ${errMsg}`);
         }
+
         const data = await res.json();
+        this.recordPrivateUsage();
         return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       } catch (netErr) {
-        if (netErr.message.includes('Google Gemini 官方回傳錯誤')) throw netErr;
+        if (netErr.message.includes('官方回傳錯誤') || netErr.message.includes('官方調用上限')) throw netErr;
         throw new Error(`連線至 Google 官方伺服器失敗 (${netErr.message})。請檢查網路或 API Key 是否正確。`);
       }
     }
 
-    if (window.location.protocol === 'file:' || !this.serverStatus.hasPublicApi) {
-      $('#apiModal')?.classList.add('active');
-      throw new Error('尚未設定 Gemini API Key。請在彈出的視窗中貼上您的 Google Gemini API Key（支援新版 AQ. 前綴），或切換至「Tesseract 離線引擎」進行免費辨識！');
+    // 2. 公用配額前置檢查
+    if (this.userQuota.remaining <= 0) {
+      this.showQuotaExceededWarning({ type: 'public', resetAt: this.userQuota.resetAt });
+      throw new Error(`您帳號的 5 小時公用配額已用完，將於 ${this.formatCountdown(this.userQuota.resetAt)} 重置。請填入個人金鑰或使用離線引擎！`);
     }
+
+    const currentUsername = window.AuthManager?.currentUser?.username || '';
 
     try {
       const res = await fetch('/api/gemini', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, model: 'gemini-3.6-flash' })
+        headers: {
+          'Content-Type': 'application/json',
+          'x-username': encodeURIComponent(currentUsername)
+        },
+        body: JSON.stringify({ ...payload, model: 'gemini-1.5-flash', _username: currentUsername })
       });
 
       const ct = res.headers.get('content-type') || '';
@@ -867,9 +1097,14 @@ window.ApiManager = {
       }
 
       if (res.status === 429) {
-        this.checkServerStatus();
-        throw new Error('今日公用免費配額已用完，請在右上角「AI 設定」輸入您的個人金鑰');
+        const errData = await res.json().catch(() => ({}));
+        if (errData.userQuota) this.userQuota = errData.userQuota;
+        if (errData.globalQuota) this.globalQuota = errData.globalQuota;
+        this.renderDashboard();
+        this.showQuotaExceededWarning({ type: 'public', resetAt: this.userQuota.resetAt, message: errData.message });
+        throw new Error(errData.message || '5 小時公用免費配額已用完，請在右上角「API 設定」輸入您的個人金鑰');
       }
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: res.statusText }));
         throw new Error(err.message || 'AI 伺服器處理失敗');
@@ -877,12 +1112,12 @@ window.ApiManager = {
 
       const data = await res.json();
       if (data._quota) {
-        this.serverStatus.remainingToday = data._quota.remaining;
-        this.updateBadge();
+        this.updateQuotaFromResponse(data._quota);
       }
+
       return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } catch (e) {
-      if (e.message.includes('尚未設定') || e.message.includes('公用免費配額') || e.message.includes('伺服器尚未配置')) {
+      if (e.message.includes('尚未設定') || e.message.includes('配額已用完') || e.message.includes('公用配額') || e.message.includes('伺服器尚未配置')) {
         throw e;
       }
       throw new Error('無法連線至 AI 代理伺服器。建議點選右上角輸入自備 Gemini API Key 直接連線 Google 官方！');

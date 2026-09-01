@@ -717,61 +717,218 @@ canvas {
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* ==================== 配額儀表板與百分比進度條 (Quota Dashboard) ==================== */
+.quota-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.quota-meter-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.quota-meter-card:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: var(--bg-card-hover);
+}
+
+.quota-meter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quota-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.quota-badge.warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.quota-badge.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.quota-badge.blue {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.quota-progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-input);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+}
+
+.quota-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #10b981, #059669);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+}
+.quota-progress-fill.user-fill {
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+}
+.quota-progress-fill.private-fill {
+  background: linear-gradient(90deg, #8b5cf6, #ec4899);
+}
+.quota-progress-fill.warn {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+.quota-progress-fill.danger {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.quota-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.quota-countdown {
+  font-family: var(--font-mono);
+  color: #38bdf8;
+  font-size: 11px;
+}
+
 /* ==================== 響應式優化 (RWD / 行動直橫式) ==================== */
 @media (max-width: 1024px) {
   .layout-3col {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto auto 1fr;
+    overflow-y: auto;
+    gap: 10px;
+    padding: 10px;
   }
   .layout-2col {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
+    overflow-y: auto;
+    gap: 10px;
+    padding: 10px;
   }
   .panel {
-    max-height: 240px;
-    border-right: 0;
+    max-height: none;
+    border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
+    border-radius: var(--radius-md);
   }
   .panel.right {
-    border-left: 0;
+    border-left: 1px solid var(--border);
     border-top: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .stage {
+    min-height: 420px;
+    border-radius: var(--radius-md);
   }
 }
 
 @media (max-width: 768px) {
   header {
     height: auto;
-    padding: 8px 12px;
+    padding: 10px 12px;
     flex-wrap: wrap;
     gap: 8px;
   }
   .brand-subtitle {
     display: none;
   }
+  .header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+    justify-content: flex-end;
+  }
   .tabs-nav {
     order: 3;
     width: 100%;
     overflow-x: auto;
     justify-content: flex-start;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs-nav::-webkit-scrollbar {
+    display: none;
   }
   .tab-btn {
-    padding: 6px 10px;
-    font-size: 11px;
+    padding: 8px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+    min-height: 38px;
+    flex-shrink: 0;
   }
   .main-container {
-    height: calc(100dvh - 86px);
+    height: auto;
+    min-height: calc(100dvh - 120px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  .panel {
-    max-height: 200px;
+  .modal-backdrop {
     padding: 10px;
+    align-items: flex-end;
   }
-  .stage-toolbar {
-    padding: 6px 10px;
-    gap: 6px;
+  .modal-box {
+    max-width: 100%;
+    max-height: 88dvh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .modal-body {
+    padding: 14px;
+    max-height: 65dvh;
+  }
+  .quota-meta-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .quota-meter-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .auth-card {
+    max-width: 100%;
+    padding: 20px 16px;
   }
   button {
-    min-height: 36px;
-    padding: 6px 10px;
+    min-height: 40px;
+    padding: 8px 12px;
   }
 }
 
@@ -1969,7 +2126,7 @@ canvas {
 <div class="modal-backdrop" id="apiModal">
   <div class="modal-box">
     <div class="modal-header">
-      <h2>Pobi Media 帳戶與 API 設定</h2>
+      <h2>Pobi Media 帳戶與 API 設定儀表</h2>
       <button id="btnCloseApiModal" style="background:transparent;border:0;color:var(--text-muted);padding:4px;min-height:auto;display:flex;align-items:center" title="關閉">
         <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -2000,9 +2157,66 @@ canvas {
     </div>
     <div class="modal-body">
       <div style="background:var(--primary-light);border:1px solid rgba(37,99,235,0.25);border-radius:var(--radius-sm);padding:12px;font-size:12px;line-height:1.6">
-        <strong>配額機制說明：</strong><br>
-        1. <strong>免費公用配額</strong>：每位使用者每日提供 5 次免費 AI 調用額度。<br>
-        2. <strong>自備專屬金鑰</strong>：若需無限制使用，請至 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#60a5fa;text-decoration:underline">Google AI Studio</a> 申請 API Key 並填入下方。
+        <strong>配額與同步機制說明：</strong><br>
+        1. <strong>5 小時循環重置</strong>：每 5 小時全體共享公用池 200 次，每位使用者帳號享 5 次獨立額度，每次登入均向雲端即時同步。<br>
+        2. <strong>自備專屬金鑰</strong>：至 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#60a5fa;text-decoration:underline">Google AI Studio</a> 申請 API Key 填入下方，即可解鎖獨立無限制模式並追蹤私有百分比。
+      </div>
+
+      <!-- 配額儀表板區域 (百分比視覺化) -->
+      <div class="quota-dashboard">
+        <!-- 1. 全域 5 小時公用池百分比 -->
+        <div class="quota-meter-card">
+          <div class="quota-meter-header">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="status-dot green" id="globalQuotaDot"></span>
+              <strong style="color:#ffffff">全體 5 小時公用池總量 (所有人共享)</strong>
+            </div>
+            <span class="quota-badge" id="globalQuotaBadge">100% 充足</span>
+          </div>
+          <div class="quota-progress-track">
+            <div class="quota-progress-fill" id="globalQuotaBar" style="width: 100%"></div>
+          </div>
+          <div class="quota-meta-row">
+            <span id="globalQuotaText">全域剩餘：200 / 200 次 (100.0%)</span>
+            <span id="globalQuotaCountdown" class="quota-countdown">5小時後重置</span>
+          </div>
+        </div>
+
+        <!-- 2. 個人 5 小時公用額度百分比 -->
+        <div class="quota-meter-card">
+          <div class="quota-meter-header">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="status-dot green" id="userQuotaDot"></span>
+              <strong style="color:#ffffff">您個人 5 小時公用額度 (跨裝置同步)</strong>
+            </div>
+            <span class="quota-badge" id="userQuotaBadge">5 / 5 次 (100%)</span>
+          </div>
+          <div class="quota-progress-track">
+            <div class="quota-progress-fill user-fill" id="userQuotaBar" style="width: 100%"></div>
+          </div>
+          <div class="quota-meta-row">
+            <span id="userQuotaText">個人剩餘：5 / 5 次 (100.0%)</span>
+            <span id="userQuotaCountdown" class="quota-countdown">5小時後重置</span>
+          </div>
+        </div>
+
+        <!-- 3. 個人自備私有金鑰使用百分比 -->
+        <div class="quota-meter-card" id="privateKeyCard">
+          <div class="quota-meter-header">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="status-dot blue" id="privateKeyDot"></span>
+              <strong style="color:#ffffff">個人自備私有金鑰 (當日調用追蹤)</strong>
+            </div>
+            <span class="quota-badge blue" id="privateKeyBadge">未啟用</span>
+          </div>
+          <div class="quota-progress-track">
+            <div class="quota-progress-fill private-fill" id="privateKeyBar" style="width: 0%"></div>
+          </div>
+          <div class="quota-meta-row">
+            <span id="privateKeyText">今日已調用：0 次 (參考每日上限 1500 次)</span>
+            <span id="privateKeyPercent" class="quota-countdown">0.0% 已用</span>
+          </div>
+        </div>
       </div>
 
       <div class="config-group">
@@ -2021,15 +2235,49 @@ canvas {
       </div>
 
       <div class="config-group">
-        <div class="config-group-title">伺服器公用狀態</div>
+        <div class="config-group-title">伺服器連線與狀態</div>
         <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">
           • 伺服器公用金鑰：<span id="srvKeyStatus" style="font-weight:500">檢測中...</span><br>
-          • 今日公用剩餘額度：<span id="srvQuotaLeft" style="font-weight:600;color:#10b981;font-family:var(--font-mono)">--</span> 次
+          • 您當前帳號：<span id="srvAccountName" style="font-weight:600;color:#60a5fa">--</span>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <button id="btnCloseApiModal2">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 配額上限警告彈窗 (Quota Exceeded Alert Modal) ==================== -->
+<div class="modal-backdrop" id="quotaAlertModal">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header" style="border-bottom:1px solid rgba(239,68,68,0.25)">
+      <h2 style="color:#f87171;display:flex;align-items:center;gap:8px">
+        <svg class="icon" viewBox="0 0 24 24" style="stroke:#ef4444"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span id="quotaAlertHeader">API 配額上限提醒</span>
+      </h2>
+      <button id="btnCloseQuotaAlert" style="background:transparent;border:0;color:var(--text-muted);padding:4px;min-height:auto;display:flex;align-items:center" title="關閉">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="gap:14px">
+      <div id="quotaAlertBanner" class="auth-alert error" style="margin:0;font-size:12.5px;line-height:1.6">
+        配額已達上限
+      </div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.6" id="quotaAlertDesc">
+        您的 5 小時公用額度已使用完畢。
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;display:flex;justify-content:space-between;align-items:center;font-size:12px">
+        <span>預計重置倒數：</span>
+        <strong id="quotaAlertCountdown" style="color:#38bdf8;font-family:var(--font-mono)">計算中...</strong>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button id="btnQuotaAlertOpenKey" class="btn-primary" style="width:100%;padding:10px">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          前往填入個人專屬免費金鑰 (無限使用)
+        </button>
+        <button id="btnQuotaAlertClose" style="width:100%">稍後再試</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2514,14 +2762,29 @@ function canvasToBlob(canvas, type = 'image/png', quality = 0.92) {
 }
 
 // ==================== 身份驗證與帳號管理器 (AuthManager) ====================
+// ==================== 身份驗證與帳號管理器 (AuthManager) ====================
 window.AuthManager = {
   currentUser: null,
   mode: 'login', // 'login' | 'register'
 
   init() {
+    this.checkOneTimeUserClear();
     this.getUsers(); // 確保預設管理員與開發者種子帳號存在
     this.checkSession();
     this.bindEvents();
+  },
+
+  checkOneTimeUserClear() {
+    // 依需求 1：清空所有既有使用者快取與舊資料
+    if (!localStorage.getItem('pobi_v2_users_cleared')) {
+      localStorage.removeItem('pobi_users');
+      localStorage.removeItem('pobi_session');
+      sessionStorage.removeItem('pobi_session');
+      try {
+        fetch('/api/auth/clear-all', { method: 'POST' }).catch(() => {});
+      } catch {}
+      localStorage.setItem('pobi_v2_users_cleared', 'true');
+    }
   },
 
   getUsers() {
@@ -2530,13 +2793,13 @@ window.AuthManager = {
       // 確保跨裝置、本機與雲端唯一：全系統僅存在唯一 developer 與 admin 帳號
       const seen = new Set();
       users = users.filter(u => {
-        const uname = (u.username || '').toLowerCase();
+        const uname = u.username || '';
         if (seen.has(uname)) return false;
         seen.add(uname);
         return true;
       });
 
-      if (!users.some(u => u.username.toLowerCase() === 'admin')) {
+      if (!users.some(u => u.username === 'admin')) {
         users.unshift({
           id: 'admin-root',
           username: 'admin',
@@ -2545,7 +2808,7 @@ window.AuthManager = {
           createdAt: new Date().toISOString()
         });
       }
-      if (!users.some(u => u.username.toLowerCase() === 'developer')) {
+      if (!users.some(u => u.username === 'developer')) {
         users.push({
           id: 'dev-root',
           username: 'developer',
@@ -2609,6 +2872,10 @@ window.AuthManager = {
       if (adminBtn) adminBtn.style.display = 'inline-flex';
     } else {
       if (adminBtn) adminBtn.style.display = 'none';
+    }
+
+    if (window.ApiManager && window.ApiManager.checkServerStatus) {
+      window.ApiManager.checkServerStatus();
     }
   },
 
@@ -2690,6 +2957,9 @@ window.AuthManager = {
         if (data.success && data.user) {
           this.currentUser = data.user;
           localStorage.setItem('pobi_session', JSON.stringify(this.currentUser));
+          if (data.quota && window.ApiManager) {
+            window.ApiManager.updateQuotaFromLogin(data.quota);
+          }
           this.showAlert('開發者管理員帳號 (developer) 已快速開通並雲端同步登入！', 'success');
           setTimeout(() => {
             this.unlockApp();
@@ -2703,7 +2973,7 @@ window.AuthManager = {
 
     // 本機備援
     const users = this.getUsers();
-    let dev = users.find(u => u.username.toLowerCase() === 'developer');
+    let dev = users.find(u => u.username === 'developer');
     if (!dev) {
       dev = {
         id: 'dev-root',
@@ -2776,9 +3046,14 @@ window.AuthManager = {
           const storage = remember ? localStorage : sessionStorage;
           storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
-          // 同步到本地備份
+          // 登入時即時同步配額 (需求 3)
+          if (data.quota && window.ApiManager) {
+            window.ApiManager.updateQuotaFromLogin(data.quota);
+          }
+
+          // 同步到本地備份 (嚴格大小寫)
           const users = this.getUsers();
-          if (!users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
+          if (!users.some(x => x.username === u)) {
             users.push({ id: data.user.id, username: u, password: p, role: data.user.role, createdAt: new Date().toISOString() });
             this.saveUsers(users);
           }
@@ -2795,14 +3070,14 @@ window.AuthManager = {
           return;
         }
       } catch {
-        // 離線/本地備援註冊
+        // 離線/本地備援註冊 (嚴格大小寫)
         const users = this.getUsers();
-        if (users.some(x => x.username.toLowerCase() === u.toLowerCase())) {
-          this.showAlert('此使用者名稱已被註冊，請切換至「會員登入」或更換一個未被使用的名稱');
+        if (users.some(x => x.username === u)) {
+          this.showAlert('此使用者名稱已被註冊，請切換至「會員登入」或更換一個未被使用的名稱 (注意大小寫)');
           return;
         }
 
-        const role = (u.toLowerCase() === 'admin' || u.toLowerCase() === 'developer') ? 'admin' : 'user';
+        const role = (u === 'admin' || u === 'developer') ? 'admin' : 'user';
         const newUser = { id: uid(), username: u, password: p, role, createdAt: new Date().toISOString() };
         users.push(newUser);
         this.saveUsers(users);
@@ -2833,9 +3108,14 @@ window.AuthManager = {
           const storage = remember ? localStorage : sessionStorage;
           storage.setItem('pobi_session', JSON.stringify(this.currentUser));
 
-          // 同步到本地備份
+          // 登入時即時同步配額 (需求 3)
+          if (data.quota && window.ApiManager) {
+            window.ApiManager.updateQuotaFromLogin(data.quota);
+          }
+
+          // 同步到本地備份 (嚴格大小寫)
           const users = this.getUsers();
-          let localUser = users.find(x => x.username.toLowerCase() === u.toLowerCase());
+          let localUser = users.find(x => x.username === u);
           if (!localUser) {
             users.push({ id: data.user.id, username: u, password: p, role: data.user.role, createdAt: new Date().toISOString() });
             this.saveUsers(users);
@@ -2848,20 +3128,20 @@ window.AuthManager = {
           }, 350);
           return;
         } else {
-          this.showAlert(data.error || '登入失敗，請確認帳號與密碼');
+          this.showAlert(data.error || '登入失敗，請確認帳號與密碼 (注意大小寫)');
           return;
         }
       } catch {
-        // 離線/本地備援登入
+        // 離線/本地備援登入 (嚴格大小寫)
         const users = this.getUsers();
-        let user = users.find(x => x.username.toLowerCase() === u.toLowerCase());
+        let user = users.find(x => x.username === u);
         if (user) {
           if (user.password !== p) {
-            this.showAlert('密碼錯誤，請重新確認');
+            this.showAlert('密碼錯誤，請確認英文字母大小寫');
             return;
           }
         } else {
-          this.showAlert('找不到此使用者名稱，請切換至「註冊新帳號」或點擊下方「一次性申請開通開發者帳號」');
+          this.showAlert('找不到此使用者名稱，請確認大小寫或切換至「註冊新帳號」');
           return;
         }
 
@@ -3123,7 +3403,7 @@ window.AdminManager = {
 
       // 刪除使用者
       tr.querySelector('.btn-del-user').onclick = () => {
-        if (u.username.toLowerCase() === 'admin') {
+        if (u.username === 'admin' || u.username === 'developer') {
           alert('無法刪除系統預設管理者帳號');
           return;
         }
@@ -3131,7 +3411,7 @@ window.AdminManager = {
           let all = window.AuthManager.getUsers();
           all = all.filter(x => x.id !== u.id);
           window.AuthManager.saveUsers(all);
-          this.renderUsers($('#adminUserSearch').value.trim().toLowerCase());
+          this.renderUsers($('#adminUserSearch')?.value.trim() || '');
           showToast(`已刪除使用者「${u.username}」`, 'info');
         }
       };
@@ -3186,15 +3466,66 @@ window.AdminManager = {
 };
 
 
-// ==================== API Key 與配額管理器 ====================
+// ==================== API Key、用量追蹤與配額儀表板 (ApiManager) ====================
 window.ApiManager = {
   userKey: localStorage.getItem('user_gemini_api_key') || '',
-  serverStatus: { hasPublicApi: false, remainingToday: 0 },
+  globalQuota: { max: 200, used: 0, remaining: 200, usedPercent: 0, remainingPercent: 100, resetAt: Date.now() + 5 * 3600 * 1000 },
+  userQuota: { max: 5, remaining: 5, used: 0, usedPercent: 0, remainingPercent: 100, resetAt: Date.now() + 5 * 3600 * 1000 },
+  hasPublicApi: false,
+  timerId: null,
 
   init() {
+    this.bindEvents();
     this.checkServerStatus();
-    this.updateBadge();
-    const el__btnSaveApiKey = $('#btnSaveApiKey'); if (el__btnSaveApiKey) el__btnSaveApiKey.onclick = () => {
+    this.renderDashboard();
+    // 每 30 秒自動更新倒數計時與儀表
+    if (this.timerId) clearInterval(this.timerId);
+    this.timerId = setInterval(() => this.updateCountdowns(), 30000);
+  },
+
+  getPrivateUsage() {
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const data = JSON.parse(localStorage.getItem('pobi_private_api_usage') || '{}');
+      if (data.date === today) return data.count || 0;
+    } catch {}
+    return 0;
+  },
+
+  recordPrivateUsage() {
+    const today = new Date().toISOString().slice(0, 10);
+    const count = this.getPrivateUsage() + 1;
+    localStorage.setItem('pobi_private_api_usage', JSON.stringify({ date: today, count }));
+    this.renderDashboard();
+  },
+
+  formatCountdown(targetTimestamp) {
+    if (!targetTimestamp) return '計算中...';
+    const diff = targetTimestamp - Date.now();
+    if (diff <= 0) return '即將重置';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return `${hours} 小時 ${mins} 分後重置`;
+    return `${mins} 分鐘後重置`;
+  },
+
+  updateQuotaFromLogin(quotaData) {
+    if (!quotaData) return;
+    if (quotaData.global) this.globalQuota = { ...this.globalQuota, ...quotaData.global };
+    if (quotaData.user) this.userQuota = { ...this.userQuota, ...quotaData.user };
+    this.renderDashboard();
+  },
+
+  updateQuotaFromResponse(quotaData) {
+    if (!quotaData) return;
+    if (quotaData.global) this.globalQuota = { ...this.globalQuota, ...quotaData.global };
+    if (quotaData.user) this.userQuota = { ...this.userQuota, ...quotaData.user };
+    this.renderDashboard();
+  },
+
+  bindEvents() {
+    const el__btnSaveApiKey = $('#btnSaveApiKey');
+    if (el__btnSaveApiKey) el__btnSaveApiKey.onclick = () => {
       const k = $('#inputUserApiKey').value.trim();
       if (!k) {
         showToast('請輸入有效的 Gemini API Key', 'warning');
@@ -3202,82 +3533,210 @@ window.ApiManager = {
       }
       this.userKey = k;
       localStorage.setItem('user_gemini_api_key', k);
-      showToast('自備 API Key 儲存成功，已啟用無限制模式', 'success');
-      this.updateBadge();
+      showToast('自備專屬 API Key 儲存成功，已啟用無限制模式', 'success');
+      this.renderDashboard();
     };
-    const el__btnClearApiKey = $('#btnClearApiKey'); if (el__btnClearApiKey) el__btnClearApiKey.onclick = () => {
+
+    const el__btnClearApiKey = $('#btnClearApiKey');
+    if (el__btnClearApiKey) el__btnClearApiKey.onclick = () => {
       this.userKey = '';
       localStorage.removeItem('user_gemini_api_key');
       $('#inputUserApiKey').value = '';
-      showToast('已清除自備金鑰，切換為公用配額模式', 'info');
-      this.updateBadge();
+      showToast('已清除自備金鑰，切換為 5 小時公用配額模式', 'info');
+      this.renderDashboard();
     };
-    const el__btnToggleKeyVisibility = $('#btnToggleKeyVisibility'); if (el__btnToggleKeyVisibility) el__btnToggleKeyVisibility.onclick = () => {
+
+    const el__btnToggleKeyVisibility = $('#btnToggleKeyVisibility');
+    if (el__btnToggleKeyVisibility) el__btnToggleKeyVisibility.onclick = () => {
       const inp = $('#inputUserApiKey');
       if (inp.type === 'password') {
         inp.type = 'text';
-        $('#btnToggleKeyVisibility').textContent = '隱藏';
+        el__btnToggleKeyVisibility.textContent = '隱藏';
       } else {
         inp.type = 'password';
-        $('#btnToggleKeyVisibility').textContent = '顯示';
+        el__btnToggleKeyVisibility.textContent = '顯示';
       }
     };
+
     if (this.userKey) {
       $('#inputUserApiKey').value = this.userKey;
     }
+
+    // 上限警示彈窗按鈕 (需求 4)
+    const el__btnCloseQuotaAlert = $('#btnCloseQuotaAlert');
+    if (el__btnCloseQuotaAlert) el__btnCloseQuotaAlert.onclick = () => $('#quotaAlertModal')?.classList.remove('active');
+    const el__btnQuotaAlertClose = $('#btnQuotaAlertClose');
+    if (el__btnQuotaAlertClose) el__btnQuotaAlertClose.onclick = () => $('#quotaAlertModal')?.classList.remove('active');
+    const el__btnQuotaAlertOpenKey = $('#btnQuotaAlertOpenKey');
+    if (el__btnQuotaAlertOpenKey) el__btnQuotaAlertOpenKey.onclick = () => {
+      $('#quotaAlertModal')?.classList.remove('active');
+      $('#apiModal')?.classList.add('active');
+    };
   },
 
   async checkServerStatus() {
+    const currentUsername = window.AuthManager?.currentUser?.username || '';
     if (window.location.protocol === 'file:') {
-      this.serverStatus = {
-        hasPublicApi: false,
-        dailyLimitPerUser: 5,
-        remainingToday: 0,
-        isAvailable: true
-      };
-      const srvKey = $('#srvKeyStatus');
-      if (srvKey) srvKey.textContent = '本機單機模式 (可使用離線 OCR 或輸入個人金鑰)';
-      const srvQuota = $('#srvQuotaLeft');
-      if (srvQuota) srvQuota.textContent = '無限制 (離線/自備)';
-      this.updateBadge();
+      this.hasPublicApi = false;
+      this.renderDashboard();
       return;
     }
 
     try {
-      const res = await fetch('/api/status');
+      const res = await fetch(`/api/status?username=${encodeURIComponent(currentUsername)}`, {
+        headers: { 'x-username': encodeURIComponent(currentUsername) }
+      });
       const ct = res.headers.get('content-type') || '';
       if (res.ok && ct.includes('application/json')) {
-        this.serverStatus = await res.json();
-        const srvKey = $('#srvKeyStatus');
-        if (srvKey) srvKey.textContent = this.serverStatus.hasPublicApi ? '已啟用 (伺服器就緒)' : '未配置 (請使用離線 OCR 或輸入個人金鑰)';
-        const srvQuota = $('#srvQuotaLeft');
-        if (srvQuota) srvQuota.textContent = this.serverStatus.hasPublicApi ? this.serverStatus.remainingToday : 0;
-      } else {
-        const srvKey = $('#srvKeyStatus');
-        if (srvKey) srvKey.textContent = '純前端模式 (請使用離線 OCR 或貼上個人金鑰)';
+        const data = await res.json();
+        this.hasPublicApi = Boolean(data.hasPublicApi);
+        if (data.global) this.globalQuota = { ...this.globalQuota, ...data.global };
+        if (data.user) this.userQuota = { ...this.userQuota, ...data.user };
       }
-    } catch (e) {
-      const srvKey = $('#srvKeyStatus');
-      if (srvKey) srvKey.textContent = '離線 / 本地單機模式';
-    }
-    this.updateBadge();
+    } catch (e) {}
+    this.renderDashboard();
   },
 
-  updateBadge() {
+  updateCountdowns() {
+    const gCd = $('#globalQuotaCountdown');
+    const uCd = $('#userQuotaCountdown');
+    if (gCd && this.globalQuota?.resetAt) gCd.textContent = this.formatCountdown(this.globalQuota.resetAt);
+    if (uCd && this.userQuota?.resetAt) uCd.textContent = this.formatCountdown(this.userQuota.resetAt);
+  },
+
+  renderDashboard() {
+    // 頂部導航 Badge
     const b = $('#quotaText');
     const dot = $('#quotaDot');
-    if (!b || !dot) return;
+    const currentUsername = window.AuthManager?.currentUser?.username || '未登入';
+    const srvUser = $('#srvAccountName');
+    if (srvUser) srvUser.textContent = currentUsername;
+
+    const srvKey = $('#srvKeyStatus');
+    if (srvKey) {
+      srvKey.textContent = this.hasPublicApi ? '已啟用 (伺服器就緒)' : '未配置 (請使用離線 OCR 或輸入個人金鑰)';
+    }
 
     if (this.userKey) {
-      b.textContent = '專屬金鑰已啟用';
-      dot.className = 'status-dot blue';
-    } else if (this.serverStatus.hasPublicApi) {
-      b.textContent = `公用剩餘: ${this.serverStatus.remainingToday} 次`;
-      dot.className = 'status-dot green';
+      if (b) b.textContent = '專屬金鑰已啟用';
+      if (dot) dot.className = 'status-dot blue';
+    } else if (this.hasPublicApi) {
+      const uRem = this.userQuota.remaining ?? 5;
+      const uPct = this.userQuota.remainingPercent ?? ((uRem / 5) * 100);
+      if (b) b.textContent = `公用剩餘: ${uRem}次 (${uPct.toFixed(0)}%)`;
+      if (dot) {
+        if (uRem <= 0) dot.className = 'status-dot danger';
+        else if (uRem <= 2) dot.className = 'status-dot yellow';
+        else dot.className = 'status-dot green';
+      }
     } else {
-      b.textContent = '需設定金鑰';
-      dot.className = 'status-dot yellow';
+      if (b) b.textContent = '需設定金鑰';
+      if (dot) dot.className = 'status-dot yellow';
     }
+
+    // 1. 全域公用池進度條與數據
+    const gMax = this.globalQuota.max || 200;
+    const gUsed = this.globalQuota.used || 0;
+    const gRem = Math.max(0, gMax - gUsed);
+    const gRemPct = Number(((gRem / gMax) * 100).toFixed(1));
+    const gUsedPct = Number(((gUsed / gMax) * 100).toFixed(1));
+
+    const elGBar = $('#globalQuotaBar');
+    const elGText = $('#globalQuotaText');
+    const elGBadge = $('#globalQuotaBadge');
+    const elGCd = $('#globalQuotaCountdown');
+
+    if (elGBar) {
+      elGBar.style.width = `${gRemPct}%`;
+      elGBar.className = gRem <= 0 ? 'quota-progress-fill danger' : gRemPct <= 20 ? 'quota-progress-fill warn' : 'quota-progress-fill';
+    }
+    if (elGText) elGText.textContent = `全域剩餘：${gRem} / ${gMax} 次 (${gRemPct}%) ｜ 已用 ${gUsedPct}%`;
+    if (elGBadge) {
+      elGBadge.textContent = `${gRemPct}% 剩餘`;
+      elGBadge.className = gRem <= 0 ? 'quota-badge danger' : gRemPct <= 20 ? 'quota-badge warn' : 'quota-badge';
+    }
+    if (elGCd) elGCd.textContent = this.formatCountdown(this.globalQuota.resetAt);
+
+    // 2. 個人 5 小時額度進度條與數據
+    const uMax = this.userQuota.max || 5;
+    const uRem = this.userQuota.remaining ?? 5;
+    const uRemPct = Number(((uRem / uMax) * 100).toFixed(1));
+    const uUsed = uMax - uRem;
+
+    const elUBar = $('#userQuotaBar');
+    const elUText = $('#userQuotaText');
+    const elUBadge = $('#userQuotaBadge');
+    const elUCd = $('#userQuotaCountdown');
+
+    if (elUBar) {
+      elUBar.style.width = `${uRemPct}%`;
+      elUBar.className = uRem <= 0 ? 'quota-progress-fill danger' : uRem <= 1 ? 'quota-progress-fill warn' : 'quota-progress-fill user-fill';
+    }
+    if (elUText) elUText.textContent = `個人剩餘：${uRem} / ${uMax} 次 (${uRemPct}%) ｜ 已用 ${uUsed} 次`;
+    if (elUBadge) {
+      elUBadge.textContent = `${uRem} / ${uMax} 次 (${uRemPct}%)`;
+      elUBadge.className = uRem <= 0 ? 'quota-badge danger' : uRem <= 1 ? 'quota-badge warn' : 'quota-badge';
+    }
+    if (elUCd) elUCd.textContent = this.formatCountdown(this.userQuota.resetAt);
+
+    // 3. 個人自備金鑰進度條與數據
+    const privateUsage = this.getPrivateUsage();
+    const privateRefMax = 1500;
+    const privatePct = Number(((privateUsage / privateRefMax) * 100).toFixed(1));
+
+    const elPBar = $('#privateKeyBar');
+    const elPText = $('#privateKeyText');
+    const elPBadge = $('#privateKeyBadge');
+    const elPPct = $('#privateKeyPercent');
+    const elPDot = $('#privateKeyDot');
+
+    if (this.userKey) {
+      if (elPDot) elPDot.className = 'status-dot blue';
+      if (elPBadge) {
+        elPBadge.textContent = '已啟用專屬金鑰';
+        elPBadge.className = 'quota-badge blue';
+      }
+      if (elPBar) elPBar.style.width = `${Math.min(100, privatePct)}%`;
+      if (elPText) elPText.textContent = `今日已調用：${privateUsage} 次 (參考每日上限 1500 次)`;
+      if (elPPct) elPPct.textContent = `${privatePct}% 已用`;
+    } else {
+      if (elPDot) elPDot.className = 'status-dot yellow';
+      if (elPBadge) {
+        elPBadge.textContent = '未填入金鑰';
+        elPBadge.className = 'quota-badge warn';
+      }
+      if (elPBar) elPBar.style.width = '0%';
+      if (elPText) elPText.textContent = '未設定個人金鑰 (目前使用 5 小時公用額度)';
+      if (elPPct) elPPct.textContent = '0.0% 已用';
+    }
+  },
+
+  showQuotaExceededWarning({ type, resetAt, message }) {
+    const modal = $('#quotaAlertModal');
+    if (!modal) {
+      showToast(message || 'API 配額已用盡，請稍候重試或輸入個人金鑰', 'error');
+      return;
+    }
+
+    const titleEl = $('#quotaAlertHeader');
+    const bannerEl = $('#quotaAlertBanner');
+    const descEl = $('#quotaAlertDesc');
+    const cdEl = $('#quotaAlertCountdown');
+
+    if (type === 'private') {
+      if (titleEl) titleEl.textContent = '個人金鑰 Google 官方上限提醒';
+      if (bannerEl) bannerEl.textContent = '⚠️ 您的個人 Gemini API Key 已達 Google 官方速率或配額上限 (Rate Limit / Quota Exceeded)';
+      if (descEl) descEl.textContent = 'Google API 官方伺服器暫時拒絕請求 (HTTP 429 Too Many Requests)。建議稍候 1~2 分鐘後重試，或前往 Google AI Studio 檢查配額狀態，亦可使用純本地 Tesseract 離線引擎！';
+      if (cdEl) cdEl.textContent = '請稍候 1~2 分鐘重試';
+    } else {
+      const cdStr = this.formatCountdown(resetAt || this.userQuota.resetAt);
+      if (titleEl) titleEl.textContent = '公用 API 配額上限提醒';
+      if (bannerEl) bannerEl.textContent = '⚠️ 5 小時公用免費配額已耗盡 (每 5 小時自動重置 5 次)';
+      if (descEl) descEl.textContent = `您當前帳號的公用配額 (${this.userQuota.max || 5} 次) 已使用完畢。系統將在每 5 小時循環重置。建議您立即在設定中貼上 Google 免費個人金鑰解鎖無限制調用！`;
+      if (cdEl) cdEl.textContent = cdStr;
+    }
+
+    modal.classList.add('active');
   },
 
   async callGeminiVision(base64Image, prompt) {
@@ -3290,9 +3749,10 @@ window.ApiManager = {
       }]
     };
 
+    // 1. 使用者自備專屬金鑰
     if (this.userKey && this.userKey.trim().length > 0) {
       const cleanKey = this.userKey.trim();
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(cleanKey)}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(cleanKey)}`;
       try {
         const res = await fetch(url, {
           method: 'POST',
@@ -3302,29 +3762,47 @@ window.ApiManager = {
           },
           body: JSON.stringify(payload)
         });
+
+        if (res.status === 429) {
+          const errData = await res.json().catch(() => ({}));
+          this.showQuotaExceededWarning({ type: 'private', message: errData.error?.message });
+          throw new Error('您的個人 Google Gemini API Key 已達官方調用上限或速率限制 (Resource Exhausted / Rate Limit)。請稍候 1~2 分鐘後重試！');
+        }
+
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           const errMsg = errData.error?.message || `HTTP ${res.status}`;
+          if (errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('Quota exceeded') || errMsg.includes('rate limit')) {
+            this.showQuotaExceededWarning({ type: 'private', message: errMsg });
+          }
           throw new Error(`Google Gemini 官方回傳錯誤: ${errMsg}`);
         }
+
         const data = await res.json();
+        this.recordPrivateUsage();
         return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       } catch (netErr) {
-        if (netErr.message.includes('Google Gemini 官方回傳錯誤')) throw netErr;
+        if (netErr.message.includes('官方回傳錯誤') || netErr.message.includes('官方調用上限')) throw netErr;
         throw new Error(`連線至 Google 官方伺服器失敗 (${netErr.message})。請檢查網路或 API Key 是否正確。`);
       }
     }
 
-    if (window.location.protocol === 'file:' || !this.serverStatus.hasPublicApi) {
-      $('#apiModal')?.classList.add('active');
-      throw new Error('尚未設定 Gemini API Key。請在彈出的視窗中貼上您的 Google Gemini API Key（支援新版 AQ. 前綴），或切換至「Tesseract 離線引擎」進行免費辨識！');
+    // 2. 公用配額前置檢查
+    if (this.userQuota.remaining <= 0) {
+      this.showQuotaExceededWarning({ type: 'public', resetAt: this.userQuota.resetAt });
+      throw new Error(`您帳號的 5 小時公用配額已用完，將於 ${this.formatCountdown(this.userQuota.resetAt)} 重置。請填入個人金鑰或使用離線引擎！`);
     }
+
+    const currentUsername = window.AuthManager?.currentUser?.username || '';
 
     try {
       const res = await fetch('/api/gemini', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, model: 'gemini-3.6-flash' })
+        headers: {
+          'Content-Type': 'application/json',
+          'x-username': encodeURIComponent(currentUsername)
+        },
+        body: JSON.stringify({ ...payload, model: 'gemini-1.5-flash', _username: currentUsername })
       });
 
       const ct = res.headers.get('content-type') || '';
@@ -3334,9 +3812,14 @@ window.ApiManager = {
       }
 
       if (res.status === 429) {
-        this.checkServerStatus();
-        throw new Error('今日公用免費配額已用完，請在右上角「AI 設定」輸入您的個人金鑰');
+        const errData = await res.json().catch(() => ({}));
+        if (errData.userQuota) this.userQuota = errData.userQuota;
+        if (errData.globalQuota) this.globalQuota = errData.globalQuota;
+        this.renderDashboard();
+        this.showQuotaExceededWarning({ type: 'public', resetAt: this.userQuota.resetAt, message: errData.message });
+        throw new Error(errData.message || '5 小時公用免費配額已用完，請在右上角「API 設定」輸入您的個人金鑰');
       }
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: res.statusText }));
         throw new Error(err.message || 'AI 伺服器處理失敗');
@@ -3344,12 +3827,12 @@ window.ApiManager = {
 
       const data = await res.json();
       if (data._quota) {
-        this.serverStatus.remainingToday = data._quota.remaining;
-        this.updateBadge();
+        this.updateQuotaFromResponse(data._quota);
       }
+
       return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } catch (e) {
-      if (e.message.includes('尚未設定') || e.message.includes('公用免費配額') || e.message.includes('伺服器尚未配置')) {
+      if (e.message.includes('尚未設定') || e.message.includes('配額已用完') || e.message.includes('公用配額') || e.message.includes('伺服器尚未配置')) {
         throw e;
       }
       throw new Error('無法連線至 AI 代理伺服器。建議點選右上角輸入自備 Gemini API Key 直接連線 Google 官方！');

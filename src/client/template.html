@@ -616,7 +616,7 @@
 <div class="modal-backdrop" id="apiModal">
   <div class="modal-box">
     <div class="modal-header">
-      <h2>Pobi Media 帳戶與 API 設定</h2>
+      <h2>Pobi Media 帳戶與 API 設定儀表</h2>
       <button id="btnCloseApiModal" style="background:transparent;border:0;color:var(--text-muted);padding:4px;min-height:auto;display:flex;align-items:center" title="關閉">
         <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -647,9 +647,66 @@
     </div>
     <div class="modal-body">
       <div style="background:var(--primary-light);border:1px solid rgba(37,99,235,0.25);border-radius:var(--radius-sm);padding:12px;font-size:12px;line-height:1.6">
-        <strong>配額機制說明：</strong><br>
-        1. <strong>免費公用配額</strong>：每位使用者每日提供 5 次免費 AI 調用額度。<br>
-        2. <strong>自備專屬金鑰</strong>：若需無限制使用，請至 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#60a5fa;text-decoration:underline">Google AI Studio</a> 申請 API Key 並填入下方。
+        <strong>配額與同步機制說明：</strong><br>
+        1. <strong>5 小時循環重置</strong>：每 5 小時全體共享公用池 200 次，每位使用者帳號享 5 次獨立額度，每次登入均向雲端即時同步。<br>
+        2. <strong>自備專屬金鑰</strong>：至 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#60a5fa;text-decoration:underline">Google AI Studio</a> 申請 API Key 填入下方，即可解鎖獨立無限制模式並追蹤私有百分比。
+      </div>
+
+      <!-- 配額儀表板區域 (百分比視覺化) -->
+      <div class="quota-dashboard">
+        <!-- 1. 全域 5 小時公用池百分比 -->
+        <div class="quota-meter-card">
+          <div class="quota-meter-header">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="status-dot green" id="globalQuotaDot"></span>
+              <strong style="color:#ffffff">全體 5 小時公用池總量 (所有人共享)</strong>
+            </div>
+            <span class="quota-badge" id="globalQuotaBadge">100% 充足</span>
+          </div>
+          <div class="quota-progress-track">
+            <div class="quota-progress-fill" id="globalQuotaBar" style="width: 100%"></div>
+          </div>
+          <div class="quota-meta-row">
+            <span id="globalQuotaText">全域剩餘：200 / 200 次 (100.0%)</span>
+            <span id="globalQuotaCountdown" class="quota-countdown">5小時後重置</span>
+          </div>
+        </div>
+
+        <!-- 2. 個人 5 小時公用額度百分比 -->
+        <div class="quota-meter-card">
+          <div class="quota-meter-header">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="status-dot green" id="userQuotaDot"></span>
+              <strong style="color:#ffffff">您個人 5 小時公用額度 (跨裝置同步)</strong>
+            </div>
+            <span class="quota-badge" id="userQuotaBadge">5 / 5 次 (100%)</span>
+          </div>
+          <div class="quota-progress-track">
+            <div class="quota-progress-fill user-fill" id="userQuotaBar" style="width: 100%"></div>
+          </div>
+          <div class="quota-meta-row">
+            <span id="userQuotaText">個人剩餘：5 / 5 次 (100.0%)</span>
+            <span id="userQuotaCountdown" class="quota-countdown">5小時後重置</span>
+          </div>
+        </div>
+
+        <!-- 3. 個人自備私有金鑰使用百分比 -->
+        <div class="quota-meter-card" id="privateKeyCard">
+          <div class="quota-meter-header">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="status-dot blue" id="privateKeyDot"></span>
+              <strong style="color:#ffffff">個人自備私有金鑰 (當日調用追蹤)</strong>
+            </div>
+            <span class="quota-badge blue" id="privateKeyBadge">未啟用</span>
+          </div>
+          <div class="quota-progress-track">
+            <div class="quota-progress-fill private-fill" id="privateKeyBar" style="width: 0%"></div>
+          </div>
+          <div class="quota-meta-row">
+            <span id="privateKeyText">今日已調用：0 次 (參考每日上限 1500 次)</span>
+            <span id="privateKeyPercent" class="quota-countdown">0.0% 已用</span>
+          </div>
+        </div>
       </div>
 
       <div class="config-group">
@@ -668,15 +725,49 @@
       </div>
 
       <div class="config-group">
-        <div class="config-group-title">伺服器公用狀態</div>
+        <div class="config-group-title">伺服器連線與狀態</div>
         <div style="font-size:12px;color:var(--text-secondary);line-height:1.6">
           • 伺服器公用金鑰：<span id="srvKeyStatus" style="font-weight:500">檢測中...</span><br>
-          • 今日公用剩餘額度：<span id="srvQuotaLeft" style="font-weight:600;color:#10b981;font-family:var(--font-mono)">--</span> 次
+          • 您當前帳號：<span id="srvAccountName" style="font-weight:600;color:#60a5fa">--</span>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <button id="btnCloseApiModal2">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 配額上限警告彈窗 (Quota Exceeded Alert Modal) ==================== -->
+<div class="modal-backdrop" id="quotaAlertModal">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header" style="border-bottom:1px solid rgba(239,68,68,0.25)">
+      <h2 style="color:#f87171;display:flex;align-items:center;gap:8px">
+        <svg class="icon" viewBox="0 0 24 24" style="stroke:#ef4444"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span id="quotaAlertHeader">API 配額上限提醒</span>
+      </h2>
+      <button id="btnCloseQuotaAlert" style="background:transparent;border:0;color:var(--text-muted);padding:4px;min-height:auto;display:flex;align-items:center" title="關閉">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="gap:14px">
+      <div id="quotaAlertBanner" class="auth-alert error" style="margin:0;font-size:12.5px;line-height:1.6">
+        配額已達上限
+      </div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.6" id="quotaAlertDesc">
+        您的 5 小時公用額度已使用完畢。
+      </div>
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;display:flex;justify-content:space-between;align-items:center;font-size:12px">
+        <span>預計重置倒數：</span>
+        <strong id="quotaAlertCountdown" style="color:#38bdf8;font-family:var(--font-mono)">計算中...</strong>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button id="btnQuotaAlertOpenKey" class="btn-primary" style="width:100%;padding:10px">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          前往填入個人專屬免費金鑰 (無限使用)
+        </button>
+        <button id="btnQuotaAlertClose" style="width:100%">稍後再試</button>
+      </div>
     </div>
   </div>
 </div>

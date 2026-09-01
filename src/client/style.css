@@ -704,61 +704,218 @@ canvas {
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* ==================== 配額儀表板與百分比進度條 (Quota Dashboard) ==================== */
+.quota-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.quota-meter-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.quota-meter-card:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: var(--bg-card-hover);
+}
+
+.quota-meter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quota-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.quota-badge.warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.quota-badge.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.quota-badge.blue {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.quota-progress-track {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-input);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+}
+
+.quota-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #10b981, #059669);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+}
+.quota-progress-fill.user-fill {
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+}
+.quota-progress-fill.private-fill {
+  background: linear-gradient(90deg, #8b5cf6, #ec4899);
+}
+.quota-progress-fill.warn {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+.quota-progress-fill.danger {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.quota-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.quota-countdown {
+  font-family: var(--font-mono);
+  color: #38bdf8;
+  font-size: 11px;
+}
+
 /* ==================== 響應式優化 (RWD / 行動直橫式) ==================== */
 @media (max-width: 1024px) {
   .layout-3col {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto auto 1fr;
+    overflow-y: auto;
+    gap: 10px;
+    padding: 10px;
   }
   .layout-2col {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
+    overflow-y: auto;
+    gap: 10px;
+    padding: 10px;
   }
   .panel {
-    max-height: 240px;
-    border-right: 0;
+    max-height: none;
+    border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
+    border-radius: var(--radius-md);
   }
   .panel.right {
-    border-left: 0;
+    border-left: 1px solid var(--border);
     border-top: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .stage {
+    min-height: 420px;
+    border-radius: var(--radius-md);
   }
 }
 
 @media (max-width: 768px) {
   header {
     height: auto;
-    padding: 8px 12px;
+    padding: 10px 12px;
     flex-wrap: wrap;
     gap: 8px;
   }
   .brand-subtitle {
     display: none;
   }
+  .header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+    justify-content: flex-end;
+  }
   .tabs-nav {
     order: 3;
     width: 100%;
     overflow-x: auto;
     justify-content: flex-start;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs-nav::-webkit-scrollbar {
+    display: none;
   }
   .tab-btn {
-    padding: 6px 10px;
-    font-size: 11px;
+    padding: 8px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+    min-height: 38px;
+    flex-shrink: 0;
   }
   .main-container {
-    height: calc(100dvh - 86px);
+    height: auto;
+    min-height: calc(100dvh - 120px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  .panel {
-    max-height: 200px;
+  .modal-backdrop {
     padding: 10px;
+    align-items: flex-end;
   }
-  .stage-toolbar {
-    padding: 6px 10px;
-    gap: 6px;
+  .modal-box {
+    max-width: 100%;
+    max-height: 88dvh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .modal-body {
+    padding: 14px;
+    max-height: 65dvh;
+  }
+  .quota-meta-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .quota-meter-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .auth-card {
+    max-width: 100%;
+    padding: 20px 16px;
   }
   button {
-    min-height: 36px;
-    padding: 6px 10px;
+    min-height: 40px;
+    padding: 8px 12px;
   }
 }
 
